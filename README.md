@@ -1,5 +1,4 @@
 
-markdown
 # Prestamos App
 
 ## Descripción
