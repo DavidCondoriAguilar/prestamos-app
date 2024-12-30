@@ -1,4 +1,3 @@
-Es importante tener un archivo README.md bien documentado para tu repositorio, donde describas tu proyecto, cómo configurarlo y cómo contribuir. Aquí tienes un ejemplo básico:
 
 markdown
 # Prestamos App
