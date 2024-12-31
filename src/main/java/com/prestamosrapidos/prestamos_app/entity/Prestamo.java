@@ -37,7 +37,7 @@ public class Prestamo {
     @JoinColumn(name = "cliente_id", nullable = false)
     private Cliente cliente;
 
-    @OneToMany(mappedBy = "prestamo", cascade = CascadeType.PERSIST, orphanRemoval = true)
+    @OneToMany(mappedBy = "prestamo", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Pago> pagos;
 
     @PrePersist

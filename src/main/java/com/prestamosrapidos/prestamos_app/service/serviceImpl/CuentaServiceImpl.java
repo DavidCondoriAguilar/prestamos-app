@@ -50,9 +50,9 @@ public class CuentaServiceImpl implements CuentaService {
 
         Cuenta cuentaGuardada = cuentaRepository.save(cuenta);
 
-        // Si quieres que el cliente tenga una referencia a la cuenta, agrega la cuenta a la lista de cuentas del cliente
+        // Si queremos que el cliente tenga una referencia a la cuenta, agrega la cuenta a la lista de cuentas del cliente
         cliente.addCuenta(cuenta);
-        clienteRepository.save(cliente); // Guarda la relación en la base de datos
+        clienteRepository.save(cliente);
 
         return convertirACuentaModel(cuentaGuardada);
     }

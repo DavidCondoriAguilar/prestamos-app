@@ -25,7 +25,7 @@ public class Cliente {
     @Column(unique = true, nullable = false)
     private String correo;
 
-    @OneToMany(mappedBy = "cliente", cascade = CascadeType.PERSIST)
+    @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Cuenta> cuentas;
 
     @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true)

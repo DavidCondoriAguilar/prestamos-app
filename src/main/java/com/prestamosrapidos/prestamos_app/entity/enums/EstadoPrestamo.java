@@ -25,9 +25,23 @@ public enum EstadoPrestamo {
      * @throws IllegalArgumentException si la descripción no coincide con ningún estado
      */
     public static EstadoPrestamo fromString(String descripcion) {
-        return Arrays.stream(values())
-                .filter(estado -> estado.descripcion.equalsIgnoreCase(descripcion))
+        // Verificar si la descripción proporcionada es válida
+        EstadoPrestamo estado = Arrays.stream(values())
+                .filter(estadoValor -> estadoValor.descripcion.equalsIgnoreCase(descripcion))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Estado no válido: " + descripcion));
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Estado no válido: '" + descripcion + "'. Los valores válidos son: "
+                                + Arrays.toString(getValidEstados())));
+        return estado;
+    }
+
+    /**
+     * Obtiene las descripciones de todos los estados posibles.
+     * @return Un array con las descripciones válidas de los estados
+     */
+    public static String[] getValidEstados() {
+        return Arrays.stream(values())
+                .map(EstadoPrestamo::getDescripcion)
+                .toArray(String[]::new);
     }
 }

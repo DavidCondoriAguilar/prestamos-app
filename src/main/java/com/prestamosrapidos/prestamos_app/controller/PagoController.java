@@ -40,7 +40,7 @@ public class PagoController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/montoRestante/{prestamoId}")
+    @GetMapping("/monto-restante/{prestamoId}")
     public ResponseEntity<Double> calcularMontoRestante(@PathVariable Long prestamoId) {
         Double montoRestante = pagoService.calcularMontoRestante(prestamoId);
         return ResponseEntity.ok(montoRestante);

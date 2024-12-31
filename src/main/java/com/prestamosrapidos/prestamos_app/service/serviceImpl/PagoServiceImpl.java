@@ -22,45 +22,38 @@ public class PagoServiceImpl implements PagoService {
     private final PrestamoRepository prestamoRepository;
 
     @Override
-    public PagoModel registrarPago(PagoModel pago) {
-        // Verificar si el prestamoId es nulo
-        if (pago.getPrestamoId() == null) {
+    public PagoModel registrarPago(PagoModel pagoModel) {
+        if (pagoModel.getPrestamoId() == null) {
             throw new IllegalArgumentException("El ID del préstamo no puede ser nulo");
         }
 
-        // Verificar si el montoPago es nulo o menor o igual a cero
-        if (pago.getMontoPago() == null || pago.getMontoPago().compareTo(BigDecimal.ZERO) <= 0) {
+        if (pagoModel.getMontoPago() == null || pagoModel.getMontoPago().compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("El monto del pago debe ser mayor a cero");
         }
 
-        // Obtener el préstamo asociado
-        Prestamo prestamo = prestamoRepository.findById(pago.getPrestamoId())
+        Prestamo prestamo = prestamoRepository.findById(pagoModel.getPrestamoId())
                 .orElseThrow(() -> new RuntimeException("Préstamo no encontrado"));
 
-        // Validar que el pago no exceda el monto restante del préstamo
-        Double montoRestante = calcularMontoRestante(pago.getPrestamoId());
-        if (pago.getMontoPago().compareTo(BigDecimal.valueOf(montoRestante)) > 0) {
+        Double montoRestante = calcularMontoRestante(pagoModel.getPrestamoId());
+        if (pagoModel.getMontoPago().compareTo(BigDecimal.valueOf(montoRestante)) > 0) {
             throw new IllegalArgumentException("El pago no puede exceder el monto restante del préstamo");
         }
 
-        // Establecer la fecha del pago, si no se proporciona se usa la fecha actual
-        LocalDate fechaPago = (pago.getFecha() != null) ? pago.getFecha() : LocalDate.now();
+        LocalDate fechaPago = LocalDate.now();
 
-        // Crear y guardar el objeto Pago
         Pago pagoEntidad = Pago.builder()
-                .monto(pago.getMontoPago())
+                .monto(pagoModel.getMontoPago())
                 .fecha(fechaPago)
                 .prestamo(prestamo)
                 .build();
 
-        // Guardar el pago en la base de datos
         Pago savedPago = pagoRepository.save(pagoEntidad);
 
-        // Convertir la entidad guardada a un modelo y devolverlo
+        prestamo.getPagos().add(savedPago);
+        prestamoRepository.save(prestamo);
+
         return convertirEntidadAModelo(savedPago);
     }
-
-
 
 
     @Override
@@ -91,21 +84,18 @@ public class PagoServiceImpl implements PagoService {
 
         double totalPagado = pagoRepository.calcularTotalPagado(prestamoId);
 
-        // Convertir totalPagado a BigDecimal para hacer la resta
         BigDecimal totalPagadoBD = BigDecimal.valueOf(totalPagado);
 
-        // Calcular el monto restante
         BigDecimal montoRestante = prestamo.getMonto().subtract(totalPagadoBD);
 
-        // Devolver el resultado como Double
         return montoRestante.doubleValue();
     }
 
     private PagoModel convertirEntidadAModelo(Pago pago) {
         return PagoModel.builder()
                 .id(pago.getId())
-                .montoPago(pago.getMonto())  // Usar BigDecimal directamente
-                .fecha(pago.getFecha())
+                .montoPago(pago.getMonto())
+                .fecha(LocalDate.now())
                 .prestamoId(pago.getPrestamo().getId())
                 .build();
     }

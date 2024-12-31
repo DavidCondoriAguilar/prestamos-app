@@ -54,10 +54,9 @@ public class PrestamoServiceImpl implements PrestamoService {
         Prestamo prestamo = prestamoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Préstamo no encontrado"));
 
-        prestamo.setMonto(new BigDecimal(String.valueOf(prestamoModel.getMonto()))); // Usamos el constructor de BigDecimal
+        prestamo.setMonto(new BigDecimal(String.valueOf(prestamoModel.getMonto())));
         prestamo.setInteres(prestamoModel.getInteres() != null ? new BigDecimal(String.valueOf(prestamoModel.getInteres())) : BigDecimal.ZERO); // Usamos el constructor de BigDecimal
 
-        // Convertimos el estado de String a Enum
         EstadoPrestamo estado = EstadoPrestamo.fromString(prestamoModel.getEstado());
         prestamo.setEstado(estado);
 
@@ -88,8 +87,8 @@ public class PrestamoServiceImpl implements PrestamoService {
 
     @Override
     public List<PrestamoModel> obtenerPrestamosPorEstado(String estado) {
-        EstadoPrestamo estadoEnum = EstadoPrestamo.fromString(estado); // Convertimos el estado de String a Enum
-        return prestamoRepository.findByEstado(String.valueOf(estadoEnum)).stream() // Ahora buscamos por el Enum
+        EstadoPrestamo estadoEnum = EstadoPrestamo.fromString(estado);
+        return prestamoRepository.findByEstado(String.valueOf(estadoEnum)).stream()
                 .map(this::convertirEntidadAModelo)
                 .collect(Collectors.toList());
     }
@@ -109,19 +108,19 @@ public class PrestamoServiceImpl implements PrestamoService {
         BigDecimal monto = prestamo.getMonto();
         BigDecimal interes = prestamo.getInteres();
 
-        BigDecimal interesTotal = monto.multiply(interes).divide(BigDecimal.valueOf(100)); // Cálculo con BigDecimal
-        BigDecimal total = monto.add(interesTotal); // Sumar el monto al interés
+        BigDecimal interesTotal = monto.multiply(interes).divide(BigDecimal.valueOf(100));
+        BigDecimal total = monto.add(interesTotal);
 
-        return total.doubleValue(); // Convertir el resultado final a Double
+        return total.doubleValue();
     }
 
     private PrestamoModel convertirEntidadAModelo(Prestamo prestamo) {
         return PrestamoModel.builder()
                 .id(prestamo.getId())
-                .monto(BigDecimal.valueOf(prestamo.getMonto().doubleValue()))  // Convertir BigDecimal a Double
-                .interes(BigDecimal.valueOf(prestamo.getInteres().doubleValue())) // Convertir BigDecimal a Double
+                .monto(BigDecimal.valueOf(prestamo.getMonto().doubleValue()))
+                .interes(BigDecimal.valueOf(prestamo.getInteres().doubleValue()))
                 .fechaCreacion(prestamo.getFechaCreacion())
-                .estado(prestamo.getEstado().getDescripcion()) // Usamos el getter de descripción del Enum
+                .estado(prestamo.getEstado().getDescripcion())
                 .clienteId(prestamo.getCliente().getId())
                 .build();
     }

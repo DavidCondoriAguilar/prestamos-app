@@ -9,9 +9,9 @@ import com.prestamosrapidos.prestamos_app.model.CuentaModel;
 import com.prestamosrapidos.prestamos_app.model.PrestamoModel;
 import com.prestamosrapidos.prestamos_app.repository.ClienteRepository;
 import com.prestamosrapidos.prestamos_app.repository.CuentaRepository;
+import com.prestamosrapidos.prestamos_app.repository.PrestamoRepository;
 import com.prestamosrapidos.prestamos_app.service.ClienteService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,8 +22,9 @@ import java.util.stream.Collectors;
 public class ClienteServiceImpl implements ClienteService {
 
     private final ClienteRepository clienteRepository;
-    @Autowired
-    private CuentaRepository cuentaRepository;
+    private final CuentaRepository cuentaRepository;
+    private final PrestamoRepository prestamoRepository;
+
 
     @Override
     public ClienteModel crearCliente(ClienteModel clienteModel) {
@@ -46,11 +47,11 @@ public class ClienteServiceImpl implements ClienteService {
                 .correo(clienteModel.getCorreo().trim().toLowerCase())
                 .build();
 
-        // Validar si el número de cuenta ya existe
+        // Validar si el número de cuenta ya existe y asociar la cuenta si es necesario
         if (clienteModel.getCuenta() != null) {
             if (cuentaRepository.existsByNumeroCuenta(clienteModel.getCuenta().getNumeroCuenta())) {
                 throw new IllegalArgumentException("El número de cuenta ya está en uso: "
-                            + clienteModel.getCuenta().getNumeroCuenta());
+                        + clienteModel.getCuenta().getNumeroCuenta());
             }
 
             // Convertir la cuenta y asociarla al cliente
@@ -59,43 +60,41 @@ public class ClienteServiceImpl implements ClienteService {
             // Primero, guardar la cuenta si no ha sido guardada
             cuenta = cuentaRepository.save(cuenta);
 
-            // Ahora asociar la cuenta al cliente
             cliente.addCuenta(cuenta);  // Usamos el método addCuenta para añadir la cuenta
         }
 
         try {
-            // Guardar cliente en la base de datos
             cliente = clienteRepository.save(cliente);
         } catch (Exception e) {
             throw new RuntimeException("Error al guardar el cliente en la base de datos", e);
         }
 
-        // Convertir la entidad Cliente a modelo y devolverla
         return convertirAClienteModel(cliente);
     }
-
 
     @Override
     public ClienteModel actualizarCliente(Long id, ClienteModel clienteModel) {
         Cliente clienteExistente = clienteRepository.findById(id)
                 .orElseThrow(() -> new ClienteNotFoundException("Cliente no encontrado con ID: " + id));
 
+        // Actualizar datos básicos del cliente
         clienteExistente.setNombre(clienteModel.getNombre());
         clienteExistente.setCorreo(clienteModel.getCorreo());
 
+        // Validar y asociar la cuenta si es necesario
         if (clienteModel.getCuenta() != null) {
-            // Convertir CuentaModel a Cuenta y asociarla al cliente
             Cuenta cuenta = convertirACuenta(clienteModel.getCuenta(), clienteExistente);
 
-            // Si el cliente ya tiene cuentas, se puede agregar la nueva cuenta
-            clienteExistente.addCuenta(cuenta);
+            // Si el cliente ya tiene cuentas, no duplicar
+            if (!clienteExistente.getCuentas().contains(cuenta)) {
+                clienteExistente.addCuenta(cuenta);
+            }
         }
 
         // Guardar el cliente con las cuentas actualizadas
         Cliente clienteActualizado = clienteRepository.save(clienteExistente);
         return convertirAClienteModel(clienteActualizado);
     }
-
 
     @Override
     public ClienteModel obtenerClientePorId(Long id) {
@@ -114,11 +113,22 @@ public class ClienteServiceImpl implements ClienteService {
 
     @Override
     public void eliminarCliente(Long id) {
-        if (!clienteRepository.existsById(id)) {
-            throw new ClienteNotFoundException("Cliente no encontrado con ID: " + id);
+        Cliente cliente = clienteRepository.findById(id)
+                .orElseThrow(() -> new ClienteNotFoundException("Cliente no encontrado con ID: " + id));
+
+        // Eliminar primero los prestamos y cuentas asociados
+        for (Cuenta cuenta : cliente.getCuentas()) {
+            cuentaRepository.delete(cuenta);
         }
-        clienteRepository.deleteById(id);
+
+        for (Prestamo prestamo : cliente.getPrestamos()) {
+            prestamoRepository.delete(prestamo);
+        }
+
+        // Luego eliminar el cliente
+        clienteRepository.delete(cliente);
     }
+
 
     private ClienteModel convertirAClienteModel(Cliente cliente) {
         return ClienteModel.builder()
@@ -133,7 +143,6 @@ public class ClienteServiceImpl implements ClienteService {
                         : null)
                 .build();
     }
-
 
     private CuentaModel convertirACuentaModel(Cuenta cuenta) {
         if (cuenta == null) return null;
