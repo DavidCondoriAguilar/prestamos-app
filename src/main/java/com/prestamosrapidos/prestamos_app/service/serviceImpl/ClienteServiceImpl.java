@@ -2,10 +2,12 @@ package com.prestamosrapidos.prestamos_app.service.serviceImpl;
 
 import com.prestamosrapidos.prestamos_app.entity.Cliente;
 import com.prestamosrapidos.prestamos_app.entity.Cuenta;
+import com.prestamosrapidos.prestamos_app.entity.Pago;
 import com.prestamosrapidos.prestamos_app.entity.Prestamo;
 import com.prestamosrapidos.prestamos_app.exception.ClienteNotFoundException;
 import com.prestamosrapidos.prestamos_app.model.ClienteModel;
 import com.prestamosrapidos.prestamos_app.model.CuentaModel;
+import com.prestamosrapidos.prestamos_app.model.PagoModel;
 import com.prestamosrapidos.prestamos_app.model.PrestamoModel;
 import com.prestamosrapidos.prestamos_app.repository.ClienteRepository;
 import com.prestamosrapidos.prestamos_app.repository.CuentaRepository;
@@ -14,6 +16,7 @@ import com.prestamosrapidos.prestamos_app.service.ClienteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -41,13 +44,11 @@ public class ClienteServiceImpl implements ClienteService {
             throw new IllegalArgumentException("El correo ya está en uso: " + clienteModel.getCorreo());
         }
 
-        // Crear entidad Cliente a partir del modelo
         Cliente cliente = Cliente.builder()
                 .nombre(clienteModel.getNombre().trim())
                 .correo(clienteModel.getCorreo().trim().toLowerCase())
                 .build();
 
-        // Validar si el número de cuenta ya existe y asociar la cuenta si es necesario
         if (clienteModel.getCuenta() != null) {
             if (cuentaRepository.existsByNumeroCuenta(clienteModel.getCuenta().getNumeroCuenta())) {
                 throw new IllegalArgumentException("El número de cuenta ya está en uso: "
@@ -57,10 +58,9 @@ public class ClienteServiceImpl implements ClienteService {
             // Convertir la cuenta y asociarla al cliente
             Cuenta cuenta = convertirACuenta(clienteModel.getCuenta(), cliente);
 
-            // Primero, guardar la cuenta si no ha sido guardada
             cuenta = cuentaRepository.save(cuenta);
 
-            cliente.addCuenta(cuenta);  // Usamos el método addCuenta para añadir la cuenta
+            cliente.addCuenta(cuenta);
         }
 
         try {
@@ -86,6 +86,7 @@ public class ClienteServiceImpl implements ClienteService {
             Cuenta cuenta = convertirACuenta(clienteModel.getCuenta(), clienteExistente);
 
             // Si el cliente ya tiene cuentas, no duplicar
+            // Verifica si la lista de cuentas del cliente no contiene la cuenta específica
             if (!clienteExistente.getCuentas().contains(cuenta)) {
                 clienteExistente.addCuenta(cuenta);
             }
@@ -115,8 +116,8 @@ public class ClienteServiceImpl implements ClienteService {
     public void eliminarCliente(Long id) {
         Cliente cliente = clienteRepository.findById(id)
                 .orElseThrow(() -> new ClienteNotFoundException("Cliente no encontrado con ID: " + id));
+/*
 
-        // Eliminar primero los prestamos y cuentas asociados
         for (Cuenta cuenta : cliente.getCuentas()) {
             cuentaRepository.delete(cuenta);
         }
@@ -124,6 +125,7 @@ public class ClienteServiceImpl implements ClienteService {
         for (Prestamo prestamo : cliente.getPrestamos()) {
             prestamoRepository.delete(prestamo);
         }
+*/
 
         // Luego eliminar el cliente
         clienteRepository.delete(cliente);
@@ -161,10 +163,21 @@ public class ClienteServiceImpl implements ClienteService {
                 .interes(prestamo.getInteres())
                 .fechaCreacion(prestamo.getFechaCreacion())
                 .estado(String.valueOf(prestamo.getEstado()))
-                .clienteId(prestamo.getCliente() != null ? prestamo.getCliente().getId() : null)
+                .clienteId(prestamo.getCliente().getId())
+                .pagos(prestamo.getPagos() != null
+                        ? prestamo.getPagos().stream().map(this::convertirPagoAModelo).collect(Collectors.toList())
+                        : new ArrayList<>())
                 .build();
     }
 
+    private PagoModel convertirPagoAModelo(Pago pago) {
+        return PagoModel.builder()
+                .id(pago.getId())
+                .montoPago(pago.getMonto())
+                .fecha(pago.getFecha())
+                .prestamoId(pago.getPrestamo().getId())
+                .build();
+    }
     private Cuenta convertirACuenta(CuentaModel cuentaModel, Cliente cliente) {
         if (cuentaModel == null) {
             return null;

@@ -14,4 +14,5 @@ public interface PagoRepository extends JpaRepository<Pago, Long> {
 
     @Query("SELECT COALESCE(SUM(p.monto), 0) FROM Pago p WHERE p.prestamo.id = :prestamoId")
     Double calcularTotalPagado(@Param("prestamoId") Long prestamoId);
+    
 }

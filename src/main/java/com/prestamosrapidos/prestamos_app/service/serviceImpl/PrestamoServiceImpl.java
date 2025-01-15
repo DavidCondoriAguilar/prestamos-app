@@ -114,6 +114,7 @@ public class PrestamoServiceImpl implements PrestamoService {
         return total.doubleValue();
     }
 
+
     private PrestamoModel convertirEntidadAModelo(Prestamo prestamo) {
         return PrestamoModel.builder()
                 .id(prestamo.getId())
@@ -124,4 +125,6 @@ public class PrestamoServiceImpl implements PrestamoService {
                 .clienteId(prestamo.getCliente().getId())
                 .build();
     }
+
+
 }
