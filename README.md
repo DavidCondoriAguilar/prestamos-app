@@ -153,6 +153,151 @@ Cuerpo de la solicitud:
 ```
 
 
+4. Listar Cliente con cuentas y pagos
+```
+GET /clientes
+```
+
+Cuerpo de la solicitud:
+
+```json
+[
+    {
+        "id": 1,
+        "nombre": "Fabio Test",
+        "correo": "fab.test@example.com",
+        "cuenta": {
+            "id": 1,
+            "numeroCuenta": "72456723221",
+            "saldo": 12300.0,
+            "clienteId": 1
+        },
+        "prestamos": [
+            {
+                "id": 3,
+                "monto": 7000.00,
+                "interes": 115.00,
+                "fechaCreacion": "2024-12-30",
+                "estado": "APROBADO",
+                "clienteId": 1,
+                "pagos": [
+                    {
+                        "id": 8,
+                        "montoPago": 3550.00,
+                        "fecha": "2024-12-30",
+                        "prestamoId": 3
+                    },
+                    {
+                        "id": 9,
+                        "montoPago": 35.00,
+                        "fecha": "2024-12-30",
+                        "prestamoId": 3
+                    },
+                    {
+                        "id": 10,
+                        "montoPago": 15.00,
+                        "fecha": "2024-12-31",
+                        "prestamoId": 3
+                    }
+                ]
+            },
+            {
+                "id": 4,
+                "monto": 7000.00,
+                "interes": 115.00,
+                "fechaCreacion": "2024-12-31",
+                "estado": "APROBADO",
+                "clienteId": 1,
+                "pagos": []
+            }
+        ]
+    },
+    {
+        "id": 3,
+        "nombre": "TEST Test",
+        "correo": "fabx.test@example.com",
+        "cuenta": {
+            "id": 3,
+            "numeroCuenta": "76456723221",
+            "saldo": 12300.0,
+            "clienteId": 3
+        },
+        "prestamos": [
+            {
+                "id": 5,
+                "monto": 7000.00,
+                "interes": 115.00,
+                "fechaCreacion": "2025-01-01",
+                "estado": "PENDIENTE",
+                "clienteId": 3,
+                "pagos": [
+                    {
+                        "id": 13,
+                        "montoPago": 15.00,
+                        "fecha": "2025-01-01",
+                        "prestamoId": 5
+                    },
+                    {
+                        "id": 14,
+                        "montoPago": 15.00,
+                        "fecha": "2025-01-01",
+                        "prestamoId": 5
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": 5,
+        "nombre": "Ale Test",
+        "correo": "aletesting@example.com",
+        "cuenta": {
+            "id": 5,
+            "numeroCuenta": "6919696996",
+            "saldo": 50000.0,
+            "clienteId": 5
+        },
+        "prestamos": []
+    },
+    {
+        "id": 6,
+        "nombre": "Diev Test",
+        "correo": "diev@example.com",
+        "cuenta": {
+            "id": 6,
+            "numeroCuenta": "6919696991",
+            "saldo": 50000.0,
+            "clienteId": 6
+        },
+        "prestamos": [
+            {
+                "id": 7,
+                "monto": 7000.00,
+                "interes": 15.00,
+                "fechaCreacion": "2025-01-03",
+                "estado": "APROBADO",
+                "clienteId": 6,
+                "pagos": [
+                    {
+                        "id": 33,
+                        "montoPago": 6005.00,
+                        "fecha": "2025-01-15",
+                        "prestamoId": 7
+                    },
+                    {
+                        "id": 34,
+                        "montoPago": 500.00,
+                        "fecha": "2025-01-15",
+                        "prestamoId": 7
+                    }
+                ]
+            }
+        ]
+    }
+]
+```
+
+
 
 Contribución
 
