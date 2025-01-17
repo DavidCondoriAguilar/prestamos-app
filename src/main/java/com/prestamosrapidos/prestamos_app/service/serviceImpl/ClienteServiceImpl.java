@@ -14,6 +14,7 @@ import com.prestamosrapidos.prestamos_app.repository.CuentaRepository;
 import com.prestamosrapidos.prestamos_app.repository.PrestamoRepository;
 import com.prestamosrapidos.prestamos_app.service.ClienteService;
 import com.prestamosrapidos.prestamos_app.service.PrestamoService;
+import com.prestamosrapidos.prestamos_app.validation.ClienteValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -30,21 +31,12 @@ public class ClienteServiceImpl implements ClienteService {
     private final PrestamoRepository prestamoRepository;
 
     private final PrestamoService prestamoService;
+    private final ClienteValidator clienteValidator;
 
     @Override
     public ClienteModel crearCliente(ClienteModel clienteModel) {
-        if (clienteModel == null) {
-            throw new IllegalArgumentException("El modelo de cliente no puede ser nulo");
-        }
-        if (clienteModel.getNombre() == null || clienteModel.getNombre().isBlank()) {
-            throw new IllegalArgumentException("El nombre del cliente no puede ser nulo o vacío");
-        }
-        if (clienteModel.getCorreo() == null || clienteModel.getCorreo().isBlank()) {
-            throw new IllegalArgumentException("El correo del cliente no puede ser nulo o vacío");
-        }
-        if (clienteRepository.existsByCorreo(clienteModel.getCorreo())) {
-            throw new IllegalArgumentException("El correo ya está en uso: " + clienteModel.getCorreo());
-        }
+        clienteValidator.validateClienteModel(clienteModel);
+        clienteValidator.validateCuentaModel(clienteModel);
 
         Cliente cliente = Cliente.builder()
                 .nombre(clienteModel.getNombre().trim())
@@ -83,7 +75,6 @@ public class ClienteServiceImpl implements ClienteService {
         clienteExistente.setNombre(clienteModel.getNombre());
         clienteExistente.setCorreo(clienteModel.getCorreo());
 
-        // Validar y asociar la cuenta si es necesario
         if (clienteModel.getCuenta() != null) {
             Cuenta cuenta = convertirACuenta(clienteModel.getCuenta(), clienteExistente);
 
@@ -145,14 +136,13 @@ public class ClienteServiceImpl implements ClienteService {
                 .prestamos(cliente.getPrestamos() != null
                         ? cliente.getPrestamos().stream()
                         .map(prestamo -> {
-                            // Aquí calculamos la deuda restante para cada préstamo
                             double deudaRestante = prestamoService.calcularMontoRestante(prestamo.getId());
                             PrestamoModel prestamoModel = convertirAPrestamoModel(prestamo);
-                            prestamoModel.setDeudaRestante(deudaRestante); // Establecemos el valor de deuda restante
+                            prestamoModel.setDeudaRestante(deudaRestante);
                             return prestamoModel;
                         })
                         .collect(Collectors.toList())
-                        : null)
+                        : new ArrayList<>())
                 .build();
     }
 

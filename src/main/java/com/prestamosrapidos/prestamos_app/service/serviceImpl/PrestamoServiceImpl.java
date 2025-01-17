@@ -142,6 +142,7 @@ public class PrestamoServiceImpl implements PrestamoService {
                 .fechaCreacion(prestamo.getFechaCreacion())
                 .estado(prestamo.getEstado().getDescripcion())
                 .clienteId(prestamo.getCliente().getId())
+                .deudaRestante(calcularMontoRestante(prestamo.getId()))
                 .pagos(prestamo.getPagos() != null ?
                         prestamo.getPagos().stream().map(pago -> PagoModel.builder()
                                         .id(pago.getId())
