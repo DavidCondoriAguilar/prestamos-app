@@ -62,4 +62,9 @@ public class PrestamoController {
     public ResponseEntity<Double> calcularInteresTotal(@PathVariable @Min(1) Long id) {
         return ResponseEntity.ok(prestamoService.calcularInteresTotal(id));
     }
+
+    @GetMapping("/{id}/monto-restante")
+    public ResponseEntity<Double> calcularMontoRestante(@PathVariable Long id) {
+        return ResponseEntity.ok(prestamoService.calcularMontoRestante(id));
+    }
 }

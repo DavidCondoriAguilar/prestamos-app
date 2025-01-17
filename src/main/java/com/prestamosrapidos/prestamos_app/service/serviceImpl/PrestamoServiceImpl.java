@@ -9,6 +9,7 @@ import com.prestamosrapidos.prestamos_app.model.PrestamoModel;
 import com.prestamosrapidos.prestamos_app.repository.ClienteRepository;
 import com.prestamosrapidos.prestamos_app.repository.PrestamoRepository;
 import com.prestamosrapidos.prestamos_app.service.PrestamoService;
+import com.prestamosrapidos.prestamos_app.validation.PrestamoValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +30,8 @@ public class PrestamoServiceImpl implements PrestamoService {
     @Override
     @Transactional
     public PrestamoModel crearPrestamo(PrestamoModel prestamoModel) {
+        PrestamoValidator.validarPrestamoModel(prestamoModel);
+
         if ("Rechazado".equalsIgnoreCase(prestamoModel.getEstado())) {
             throw new IllegalArgumentException("No se puede crear un préstamo con estado 'Rechazado'");
         }
@@ -123,15 +126,24 @@ public class PrestamoServiceImpl implements PrestamoService {
 
         // Calcular el monto total del préstamo
         BigDecimal montoTotal = prestamo.getMonto();
-        // Sumar los pagos realizados
-        BigDecimal montoPagado = prestamo.getPagos().stream()
-                .map(Pago::getMonto) // Obtener el monto de cada pago
-                .reduce(BigDecimal.ZERO, BigDecimal::add); // Sumar todos los pagos
+
+        // Obtener la lista de pagos y manejar si es null
+        List<Pago> pagos = prestamo.getPagos();
+        BigDecimal montoPagado = BigDecimal.ZERO;
+
+        if (pagos != null && !pagos.isEmpty()) {
+            // Sumar los pagos realizados si existen
+            montoPagado = pagos.stream()
+                    .map(Pago::getMonto) // Obtener el monto de cada pago
+                    .reduce(BigDecimal.ZERO, BigDecimal::add); // Sumar todos los pagos
+        }
 
         // Calcular el monto restante
         BigDecimal montoRestante = montoTotal.subtract(montoPagado);
+
         return montoRestante.doubleValue();
     }
+
 
 
     private PrestamoModel convertirEntidadAModelo(Prestamo prestamo) {

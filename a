@@ -1,0 +1,72 @@
+[33mcommit 20e8e6e2b7b3e21841e643157b78ed3dbfc77e8a[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: David <davidragewild@gmail.com>
+Date:   Fri Jan 17 13:45:21 2025 -0500
+
+    add: folder validation and ClienteValidator
+
+[33mcommit 70ce7139fa93244f1d4bf75d794dad54e334f5f3[m
+Merge: 6376b25 e7c44fe
+Author: David <davidragewild@gmail.com>
+Date:   Fri Jan 17 11:22:44 2025 -0500
+
+    feat: update pdf data and and we add the remaining debt to the client list
+
+[33mcommit 6376b25811cdc131d87c049090cd0c3a385eaf25[m
+Author: David <davidragewild@gmail.com>
+Date:   Fri Jan 17 11:21:06 2025 -0500
+
+    feat: update pdf data and we add the remaining debt to the client list
+
+[33mcommit e7c44fe35a2c8e62aaaebddf22bb4d340312352d[m
+Author: Deiv <103283145+DavidCondoriAguilar@users.noreply.github.com>
+Date:   Thu Jan 16 10:45:15 2025 -0500
+
+    Update GET clientes
+
+[33mcommit 3a1ceef97b6444f2c998ca70ba0394810c63cbee[m
+Author: Deiv <103283145+DavidCondoriAguilar@users.noreply.github.com>
+Date:   Wed Jan 15 18:35:05 2025 -0500
+
+    Update README.md
+
+[33mcommit 9a82f688349f3ea4f1d7f5a8dbfacf5d6ec56b5b[m
+Author: David <davidragewild@gmail.com>
+Date:   Wed Jan 15 17:56:11 2025 -0500
+
+    feat: add pagos and api get pdf for client
+
+[33mcommit d4df7d423691cee8c4372e8b18af48fdfc6a6fa6[m
+Author: David <davidragewild@gmail.com>
+Date:   Tue Dec 31 09:25:41 2024 -0500
+
+    feat: update cors
+
+[33mcommit a422d93608785c9a02e5c4ff223838d68d871983[m
+Author: David <davidragewild@gmail.com>
+Date:   Tue Dec 31 09:12:59 2024 -0500
+
+    feat: add payment creation functionality and CORS configuration
+
+[33mcommit 0cbc2bd24892e1833581bd28f2a5fa9673025abf[m
+Author: Deiv <103283145+DavidCondoriAguilar@users.noreply.github.com>
+Date:   Sun Dec 29 20:38:45 2024 -0500
+
+    Update README.md
+
+[33mcommit c170f0756662396e63e2315de7b74ddb726d5c9a[m
+Author: Deiv <103283145+DavidCondoriAguilar@users.noreply.github.com>
+Date:   Sun Dec 29 20:38:36 2024 -0500
+
+    Update README.md
+
+[33mcommit 88b2ce7c216a6740efb401989a5c49e6033e671a[m
+Author: Deiv <103283145+DavidCondoriAguilar@users.noreply.github.com>
+Date:   Sun Dec 29 18:05:03 2024 -0500
+
+    Create README.md
+
+[33mcommit 6f92a4b352e2fb3b908fcb38e2ae8b11ac3e781b[m
+Author: David <davidragewild@gmail.com>
+Date:   Sun Dec 29 17:59:46 2024 -0500
+
+    first commit

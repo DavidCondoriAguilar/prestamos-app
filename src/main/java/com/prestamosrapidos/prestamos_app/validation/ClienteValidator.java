@@ -29,6 +29,7 @@ public class ClienteValidator {
         if (clienteRepository.existsByCorreo(clienteModel.getCorreo())) {
             throw new IllegalArgumentException("El correo ya está en uso: " + clienteModel.getCorreo());
         }
+
     }
 
     public void validateCuentaModel(ClienteModel clienteModel) {

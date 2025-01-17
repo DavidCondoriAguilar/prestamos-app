@@ -21,7 +21,6 @@ public class PrestamoModel {
     private String estado;
     private Long clienteId;
     private double deudaRestante;
-
     private List<PagoModel> pagos;
 
 }
