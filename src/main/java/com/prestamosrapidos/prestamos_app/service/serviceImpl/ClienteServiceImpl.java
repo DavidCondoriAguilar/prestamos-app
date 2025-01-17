@@ -13,6 +13,7 @@ import com.prestamosrapidos.prestamos_app.repository.ClienteRepository;
 import com.prestamosrapidos.prestamos_app.repository.CuentaRepository;
 import com.prestamosrapidos.prestamos_app.repository.PrestamoRepository;
 import com.prestamosrapidos.prestamos_app.service.ClienteService;
+import com.prestamosrapidos.prestamos_app.service.PrestamoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +29,7 @@ public class ClienteServiceImpl implements ClienteService {
     private final CuentaRepository cuentaRepository;
     private final PrestamoRepository prestamoRepository;
 
+    private final PrestamoService prestamoService;
 
     @Override
     public ClienteModel crearCliente(ClienteModel clienteModel) {
@@ -141,10 +143,19 @@ public class ClienteServiceImpl implements ClienteService {
                         ? convertirACuentaModel(cliente.getCuentas().getFirst())
                         : null)
                 .prestamos(cliente.getPrestamos() != null
-                        ? cliente.getPrestamos().stream().map(this::convertirAPrestamoModel).collect(Collectors.toList())
+                        ? cliente.getPrestamos().stream()
+                        .map(prestamo -> {
+                            // Aquí calculamos la deuda restante para cada préstamo
+                            double deudaRestante = prestamoService.calcularMontoRestante(prestamo.getId());
+                            PrestamoModel prestamoModel = convertirAPrestamoModel(prestamo);
+                            prestamoModel.setDeudaRestante(deudaRestante); // Establecemos el valor de deuda restante
+                            return prestamoModel;
+                        })
+                        .collect(Collectors.toList())
                         : null)
                 .build();
     }
+
 
     private CuentaModel convertirACuentaModel(Cuenta cuenta) {
         if (cuenta == null) return null;
@@ -178,6 +189,7 @@ public class ClienteServiceImpl implements ClienteService {
                 .prestamoId(pago.getPrestamo().getId())
                 .build();
     }
+
     private Cuenta convertirACuenta(CuentaModel cuentaModel, Cliente cliente) {
         if (cuentaModel == null) {
             return null;

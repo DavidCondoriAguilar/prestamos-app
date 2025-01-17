@@ -1,8 +1,10 @@
 package com.prestamosrapidos.prestamos_app.service.serviceImpl;
 
 import com.prestamosrapidos.prestamos_app.entity.Cliente;
+import com.prestamosrapidos.prestamos_app.entity.Pago;
 import com.prestamosrapidos.prestamos_app.entity.Prestamo;
 import com.prestamosrapidos.prestamos_app.entity.enums.EstadoPrestamo;
+import com.prestamosrapidos.prestamos_app.model.PagoModel;
 import com.prestamosrapidos.prestamos_app.model.PrestamoModel;
 import com.prestamosrapidos.prestamos_app.repository.ClienteRepository;
 import com.prestamosrapidos.prestamos_app.repository.PrestamoRepository;
@@ -13,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -113,6 +116,22 @@ public class PrestamoServiceImpl implements PrestamoService {
 
         return total.doubleValue();
     }
+    public Double calcularMontoRestante(Long prestamoId) {
+        // Obtener el préstamo por ID
+        Prestamo prestamo = prestamoRepository.findById(prestamoId)
+                .orElseThrow(() -> new RuntimeException("Préstamo no encontrado"));
+
+        // Calcular el monto total del préstamo
+        BigDecimal montoTotal = prestamo.getMonto();
+        // Sumar los pagos realizados
+        BigDecimal montoPagado = prestamo.getPagos().stream()
+                .map(Pago::getMonto) // Obtener el monto de cada pago
+                .reduce(BigDecimal.ZERO, BigDecimal::add); // Sumar todos los pagos
+
+        // Calcular el monto restante
+        BigDecimal montoRestante = montoTotal.subtract(montoPagado);
+        return montoRestante.doubleValue();
+    }
 
 
     private PrestamoModel convertirEntidadAModelo(Prestamo prestamo) {
@@ -123,8 +142,16 @@ public class PrestamoServiceImpl implements PrestamoService {
                 .fechaCreacion(prestamo.getFechaCreacion())
                 .estado(prestamo.getEstado().getDescripcion())
                 .clienteId(prestamo.getCliente().getId())
+                .pagos(prestamo.getPagos() != null ?
+                        prestamo.getPagos().stream().map(pago -> PagoModel.builder()
+                                        .id(pago.getId())
+                                        .montoPago(pago.getMonto())
+                                        .fecha(pago.getFecha())
+                                        .prestamoId(pago.getPrestamo().getId())
+                                        .build())
+                                .collect(Collectors.toList())
+                        : new ArrayList<>())
                 .build();
     }
-
 
 }

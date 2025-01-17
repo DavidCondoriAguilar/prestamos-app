@@ -20,5 +20,8 @@ public class PrestamoModel {
     private LocalDate fechaCreacion;
     private String estado;
     private Long clienteId;
+    private Double deudaRestante;
+
     private List<PagoModel> pagos;
+
 }

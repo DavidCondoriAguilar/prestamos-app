@@ -25,7 +25,7 @@ public class Prestamo {
     private BigDecimal monto; // Cambio a BigDecimal
 
     @Column(nullable = false, precision = 5, scale = 2)
-    private BigDecimal interes; // Cambio a BigDecimal
+    private BigDecimal interes;
 
     @Column(nullable = false)
     private LocalDate fechaCreacion;

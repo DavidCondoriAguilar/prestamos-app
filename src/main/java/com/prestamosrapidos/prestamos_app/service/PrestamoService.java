@@ -13,4 +13,6 @@ public interface PrestamoService {
     List<PrestamoModel> obtenerPrestamosPorEstado(String estado);
     void eliminarPrestamo(Long id);
     Double calcularInteresTotal(Long prestamoId);
+    Double calcularMontoRestante(Long prestamoId);
+
 }
