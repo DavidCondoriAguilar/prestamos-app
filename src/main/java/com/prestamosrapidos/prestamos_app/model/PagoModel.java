@@ -21,5 +21,6 @@ public class PagoModel {
     @Positive(message = "El monto del pago debe ser mayor a cero")
     private BigDecimal montoPago;
     private LocalDate fecha;
+    private Double deudaRestante;
     private Long prestamoId;
 }

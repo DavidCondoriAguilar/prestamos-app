@@ -6,6 +6,7 @@ import com.prestamosrapidos.prestamos_app.model.PagoModel;
 import com.prestamosrapidos.prestamos_app.repository.PagoRepository;
 import com.prestamosrapidos.prestamos_app.repository.PrestamoRepository;
 import com.prestamosrapidos.prestamos_app.service.PagoService;
+import com.prestamosrapidos.prestamos_app.util.PrestamoHelper;
 import com.prestamosrapidos.prestamos_app.validation.PagoValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,7 @@ public class PagoServiceImpl implements PagoService {
 
     private final PagoRepository pagoRepository;
     private final PrestamoRepository prestamoRepository;
+    private final PrestamoHelper prestamoHelper;
 
     @Override
     @Transactional
@@ -91,10 +93,14 @@ public class PagoServiceImpl implements PagoService {
     }
 
     private PagoModel convertirEntidadAModelo(Pago pago) {
+
+        Double deudaRestante = prestamoHelper.calcularMontoRestante(pago.getPrestamo());
+
         return PagoModel.builder()
                 .id(pago.getId())
                 .montoPago(pago.getMonto())
                 .fecha(pago.getFecha())
+                .deudaRestante(deudaRestante)
                 .prestamoId(pago.getPrestamo().getId())
                 .build();
     }
