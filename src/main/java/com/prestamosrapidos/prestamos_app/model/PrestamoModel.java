@@ -18,6 +18,7 @@ public class PrestamoModel {
     private BigDecimal monto;
     private BigDecimal interes;
     private LocalDate fechaCreacion;
+    private LocalDate fechaVencimiento;
     private String estado;
     private Long clienteId;
     private double deudaRestante;

@@ -163,6 +163,7 @@ public class ClienteServiceImpl implements ClienteService {
                 .monto(prestamo.getMonto())
                 .interes(prestamo.getInteres())
                 .fechaCreacion(prestamo.getFechaCreacion())
+                .fechaVencimiento(prestamo.getFechaVencimiento())
                 .estado(String.valueOf(prestamo.getEstado()))
                 .clienteId(prestamo.getCliente().getId())
                 .pagos(prestamo.getPagos() != null

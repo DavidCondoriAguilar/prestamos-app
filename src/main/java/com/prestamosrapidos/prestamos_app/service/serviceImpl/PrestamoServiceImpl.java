@@ -54,14 +54,13 @@ public class PrestamoServiceImpl implements PrestamoService {
         return convertirEntidadAModelo(savedPrestamo);
     }
 
-
     @Override
     public PrestamoModel actualizarPrestamo(Long id, PrestamoModel prestamoModel) {
         Prestamo prestamo = prestamoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Préstamo no encontrado"));
 
         prestamo.setMonto(new BigDecimal(String.valueOf(prestamoModel.getMonto())));
-        prestamo.setInteres(prestamoModel.getInteres() != null ? new BigDecimal(String.valueOf(prestamoModel.getInteres())) : BigDecimal.ZERO); // Usamos el constructor de BigDecimal
+        prestamo.setInteres(prestamoModel.getInteres() != null ? new BigDecimal(String.valueOf(prestamoModel.getInteres())) : BigDecimal.ZERO);
 
         EstadoPrestamo estado = EstadoPrestamo.fromString(prestamoModel.getEstado());
         prestamo.setEstado(estado);
@@ -119,32 +118,26 @@ public class PrestamoServiceImpl implements PrestamoService {
 
         return total.doubleValue();
     }
+
     public Double calcularMontoRestante(Long prestamoId) {
-        // Obtener el préstamo por ID
         Prestamo prestamo = prestamoRepository.findById(prestamoId)
                 .orElseThrow(() -> new RuntimeException("Préstamo no encontrado"));
 
-        // Calcular el monto total del préstamo
         BigDecimal montoTotal = prestamo.getMonto();
 
-        // Obtener la lista de pagos y manejar si es null
         List<Pago> pagos = prestamo.getPagos();
         BigDecimal montoPagado = BigDecimal.ZERO;
 
         if (pagos != null && !pagos.isEmpty()) {
-            // Sumar los pagos realizados si existen
             montoPagado = pagos.stream()
-                    .map(Pago::getMonto) // Obtener el monto de cada pago
-                    .reduce(BigDecimal.ZERO, BigDecimal::add); // Sumar todos los pagos
+                    .map(Pago::getMonto)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
         }
 
-        // Calcular el monto restante
         BigDecimal montoRestante = montoTotal.subtract(montoPagado);
 
         return montoRestante.doubleValue();
     }
-
-
 
     private PrestamoModel convertirEntidadAModelo(Prestamo prestamo) {
         return PrestamoModel.builder()

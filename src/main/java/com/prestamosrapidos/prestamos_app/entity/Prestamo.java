@@ -22,7 +22,7 @@ public class Prestamo {
     private Long id;
 
     @Column(nullable = false)
-    private BigDecimal monto; // Cambio a BigDecimal
+    private BigDecimal monto;
 
     @Column(nullable = false, precision = 5, scale = 2)
     private BigDecimal interes;
@@ -30,11 +30,13 @@ public class Prestamo {
     @Column(nullable = false)
     private LocalDate fechaCreacion;
 
+    @Column(name = "fecha_vencimiento")
+    private LocalDate fechaVencimiento;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private EstadoPrestamo estado;
 
-    //@ManyToOne(fetch = FetchType.LAZY)
     @ManyToOne
     @JoinColumn(name = "cliente_id", nullable = false)
     private Cliente cliente;

@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,5 +20,6 @@ public interface PrestamoRepository extends JpaRepository<Prestamo, Long> {
     @Query("SELECT p FROM Prestamo p LEFT JOIN FETCH p.pagos WHERE p.id = :id")
     Optional<Prestamo> findByIdWithPagos(@Param("id") Long id);
 
+    List<Prestamo> findByFechaVencimientoBefore(LocalDate fecha); // Buscar préstamos próximos a vencer
 
 }
