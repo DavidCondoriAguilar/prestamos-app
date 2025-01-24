@@ -5,10 +5,16 @@ import com.prestamosrapidos.prestamos_app.model.PrestamoModel;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Objects;
 
 public class PrestamoValidator {
 
+    private static final BigDecimal MAX_INTERES = BigDecimal.valueOf(100);
+
+    /**
+     * Valida el modelo del préstamo asegurando que todos los campos requeridos cumplan con las reglas.
+     *
+     * @param prestamoModel El modelo del préstamo a validar.
+     */
     public static void validarPrestamoModel(PrestamoModel prestamoModel) {
         if (prestamoModel == null) {
             throw new IllegalArgumentException("El modelo del préstamo no puede ser nulo.");
@@ -18,7 +24,7 @@ public class PrestamoValidator {
         validarInteres(prestamoModel.getInteres());
         validarEstado(prestamoModel.getEstado());
         validarClienteId(prestamoModel.getClienteId());
-        validarFechaCreacion(prestamoModel.getFechaCreacion());
+        validarFechas(prestamoModel.getFechaCreacion(), prestamoModel.getFechaVencimiento());
     }
 
     private static void validarMonto(BigDecimal monto) {
@@ -28,7 +34,7 @@ public class PrestamoValidator {
     }
 
     private static void validarInteres(BigDecimal interes) {
-        if (interes == null || interes.compareTo(BigDecimal.ZERO) < 0 || interes.compareTo(BigDecimal.valueOf(100)) > 0) {
+        if (interes == null || interes.compareTo(BigDecimal.ZERO) < 0 || interes.compareTo(MAX_INTERES) > 0) {
             throw new IllegalArgumentException("El interés debe estar entre 0 y 100.");
         }
     }
@@ -40,7 +46,8 @@ public class PrestamoValidator {
         try {
             EstadoPrestamo.fromString(estado);
         } catch (IllegalArgumentException ex) {
-            throw new IllegalArgumentException("El estado proporcionado no es válido. Valores permitidos: ");
+            throw new IllegalArgumentException("El estado proporcionado no es válido. Valores permitidos: " +
+                    EstadoPrestamo.values());
         }
     }
 
@@ -50,7 +57,15 @@ public class PrestamoValidator {
         }
     }
 
-    private static void validarFechaCreacion(LocalDate fechaCreacion) {
+    private static void validarFechas(LocalDate fechaCreacion, LocalDate fechaVencimiento) {
+        if (fechaVencimiento == null) {
+            throw new IllegalArgumentException("La fecha de vencimiento es obligatoria.");
+        }
+
+        if (fechaCreacion != null && fechaVencimiento.isBefore(fechaCreacion)) {
+            throw new IllegalArgumentException("La fecha de vencimiento no puede ser anterior a la fecha de creación.");
+        }
+
         if (fechaCreacion != null && fechaCreacion.isAfter(LocalDate.now())) {
             throw new IllegalArgumentException("La fecha de creación no puede ser una fecha futura.");
         }

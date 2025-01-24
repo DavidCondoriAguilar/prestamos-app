@@ -41,18 +41,26 @@ public class PrestamoServiceImpl implements PrestamoService {
 
         EstadoPrestamo estado = EstadoPrestamo.fromString(prestamoModel.getEstado());
 
+        LocalDate fechaCreacion = prestamoModel.getFechaCreacion() != null
+                ? prestamoModel.getFechaCreacion()
+                : LocalDate.now();
+
         Prestamo prestamo = Prestamo.builder()
-                .monto(new BigDecimal(String.valueOf(prestamoModel.getMonto())))
-                .interes(prestamoModel.getInteres() != null ? new BigDecimal(String.valueOf(prestamoModel.getInteres())) : BigDecimal.ZERO)
-                .fechaCreacion(prestamoModel.getFechaCreacion() != null ? prestamoModel.getFechaCreacion() : LocalDate.now())
+                .monto(prestamoModel.getMonto())
+                .interes(prestamoModel.getInteres() != null ? prestamoModel.getInteres() : BigDecimal.ZERO)
+                .fechaCreacion(fechaCreacion)
+                .fechaVencimiento(prestamoModel.getFechaVencimiento())
                 .estado(estado)
                 .cliente(cliente)
                 .build();
 
+        // Guardar el préstamo en la base de datos
         Prestamo savedPrestamo = prestamoRepository.save(prestamo);
 
         return convertirEntidadAModelo(savedPrestamo);
     }
+
+
 
     @Override
     public PrestamoModel actualizarPrestamo(Long id, PrestamoModel prestamoModel) {
@@ -62,12 +70,21 @@ public class PrestamoServiceImpl implements PrestamoService {
         prestamo.setMonto(new BigDecimal(String.valueOf(prestamoModel.getMonto())));
         prestamo.setInteres(prestamoModel.getInteres() != null ? new BigDecimal(String.valueOf(prestamoModel.getInteres())) : BigDecimal.ZERO);
 
+        if (prestamoModel.getFechaVencimiento() != null) {
+            if (prestamoModel.getFechaVencimiento().isBefore(prestamo.getFechaCreacion())) {
+                throw new IllegalArgumentException("La fecha de vencimiento no puede ser anterior a la fecha de creación");
+            }
+            prestamo.setFechaVencimiento(prestamoModel.getFechaVencimiento());
+        }
+
         EstadoPrestamo estado = EstadoPrestamo.fromString(prestamoModel.getEstado());
         prestamo.setEstado(estado);
 
+        // Guardar los cambios
         Prestamo updatedPrestamo = prestamoRepository.save(prestamo);
         return convertirEntidadAModelo(updatedPrestamo);
     }
+
 
     @Override
     public PrestamoModel obtenerPrestamoPorId(Long id) {
@@ -145,6 +162,7 @@ public class PrestamoServiceImpl implements PrestamoService {
                 .monto(BigDecimal.valueOf(prestamo.getMonto().doubleValue()))
                 .interes(BigDecimal.valueOf(prestamo.getInteres().doubleValue()))
                 .fechaCreacion(prestamo.getFechaCreacion())
+                .fechaVencimiento(prestamo.getFechaVencimiento())
                 .estado(prestamo.getEstado().getDescripcion())
                 .clienteId(prestamo.getCliente().getId())
                 .deudaRestante(calcularMontoRestante(prestamo.getId()))
