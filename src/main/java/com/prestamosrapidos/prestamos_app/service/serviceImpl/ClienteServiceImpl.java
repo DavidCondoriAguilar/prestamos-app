@@ -18,6 +18,7 @@ import com.prestamosrapidos.prestamos_app.validation.ClienteValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -162,7 +163,8 @@ public class ClienteServiceImpl implements ClienteService {
                 .id(prestamo.getId())
                 .monto(prestamo.getMonto())
                 .interes(prestamo.getInteres())
-                .fechaCreacion(prestamo.getFechaCreacion())
+                .interesMoratorio(prestamo.getInteresMoratorio())
+                .fechaCreacion(LocalDate.from(prestamo.getFechaCreacion()))
                 .fechaVencimiento(prestamo.getFechaVencimiento())
                 .estado(String.valueOf(prestamo.getEstado()))
                 .clienteId(prestamo.getCliente().getId())

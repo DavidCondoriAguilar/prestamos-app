@@ -17,10 +17,10 @@ import java.time.LocalDate;
 public class PagoModel {
 
     private Long id;
-    @NotNull(message = "El monto de pago no puede ser null")
+    @NotNull(message = "El monto de pago no puede ser vacio")
     @Positive(message = "El monto del pago debe ser mayor a cero")
     private BigDecimal montoPago;
     private LocalDate fecha;
-    private Double deudaRestante;
+   /* private Double deudaRestante;*/
     private Long prestamoId;
 }

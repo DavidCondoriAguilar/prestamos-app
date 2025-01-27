@@ -22,6 +22,7 @@ public class PrestamoModel {
     private String estado;
     private Long clienteId;
     private double deudaRestante;
+    private BigDecimal interesMoratorio;
     private List<PagoModel> pagos;
 
 }

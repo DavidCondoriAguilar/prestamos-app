@@ -2,6 +2,7 @@ package com.prestamosrapidos.prestamos_app.service.serviceImpl;
 
 import com.prestamosrapidos.prestamos_app.entity.Pago;
 import com.prestamosrapidos.prestamos_app.entity.Prestamo;
+import com.prestamosrapidos.prestamos_app.entity.enums.EstadoPrestamo;
 import com.prestamosrapidos.prestamos_app.model.PagoModel;
 import com.prestamosrapidos.prestamos_app.repository.PagoRepository;
 import com.prestamosrapidos.prestamos_app.repository.PrestamoRepository;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,36 +31,39 @@ public class PagoServiceImpl implements PagoService {
     @Override
     @Transactional
     public PagoModel registrarPago(PagoModel pagoModel) {
-        log.info("Iniciando registro de pago: {}", pagoModel);
-
         PagoValidator.validarPrestamoId(pagoModel.getPrestamoId());
         PagoValidator.validarMontoPago(pagoModel.getMontoPago());
 
-        // Buscar el préstamo asociado
         Prestamo prestamo = prestamoRepository.findById(pagoModel.getPrestamoId())
-                .orElseThrow(() -> {
-                    log.error("Préstamo no encontrado con ID: {}", pagoModel.getPrestamoId());
-                    return new RuntimeException("Préstamo no encontrado");
-                });
+                .orElseThrow(() -> new RuntimeException("Préstamo no encontrado con ID: " + pagoModel.getPrestamoId()));
 
-        // Calcular el monto restante del préstamo
         BigDecimal montoRestante = BigDecimal.valueOf(calcularMontoRestante(pagoModel.getPrestamoId()));
+
+        if (pagoModel.getMontoPago().compareTo(BigDecimal.valueOf(montoRestante.doubleValue())) > 0) {
+            throw new IllegalArgumentException("El monto del pago no puede ser mayor al saldo restante.");
+        }
 
         PagoValidator.validarPago(pagoModel, prestamo, montoRestante);
 
+        // Crear la entidad de pago
         Pago pagoEntidad = Pago.builder()
                 .monto(pagoModel.getMontoPago())
                 .prestamo(prestamo)
                 .build();
 
-        log.info("Guardando el pago en la base de datos: {}", pagoEntidad);
         Pago savedPago = pagoRepository.save(pagoEntidad);
 
-        log.info("Pago guardado correctamente: ID={}, Monto={}, Fecha={}",
-                savedPago.getId(), savedPago.getMonto(), savedPago.getFecha());
+        // Actualizar el estado del préstamo basado en el saldo pendiente
+        BigDecimal nuevoSaldoPendiente = montoRestante.subtract(pagoModel.getMontoPago());
+        if (nuevoSaldoPendiente.compareTo(BigDecimal.ZERO) == 0) {
+            prestamo.setEstado(EstadoPrestamo.PAGADO);
+        }
+        prestamoRepository.save(prestamo);
 
+        // Retornar el modelo de pago
         return convertirEntidadAModelo(savedPago);
     }
+
 
     @Override
     public List<PagoModel> obtenerPagosPorPrestamo(Long prestamoId) {
@@ -86,10 +91,37 @@ public class PagoServiceImpl implements PagoService {
         Prestamo prestamo = prestamoRepository.findById(prestamoId)
                 .orElseThrow(() -> new RuntimeException("Préstamo no encontrado"));
 
-        double totalPagado = pagoRepository.calcularTotalPagado(prestamoId);
-        BigDecimal montoRestante = prestamo.getMonto().subtract(BigDecimal.valueOf(totalPagado));
+        // Calcular monto total inicial (monto + interés inicial)
+        BigDecimal montoTotal = prestamo.getMonto()
+                .add(prestamo.getMonto().multiply(prestamo.getInteres())
+                        .divide(BigDecimal.valueOf(100)));
 
-        return montoRestante.doubleValue();
+        // Sumar pagos realizados
+        BigDecimal montoPagado = prestamo.getPagos().stream()
+                .map(Pago::getMonto)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Saldo pendiente sin mora
+        BigDecimal saldoPendiente = montoTotal.subtract(montoPagado);
+
+        // Aplicar interés moratorio si está vencido y no se ha aplicado antes
+        LocalDate hoy = LocalDate.now();
+        if (prestamo.getFechaVencimiento() != null
+                && hoy.isAfter(prestamo.getFechaVencimiento())
+                && !prestamo.getInteresMoratorioAplicado()) {
+
+            BigDecimal interesMoratorio = saldoPendiente.multiply(prestamo.getInteresMoratorio())
+                    .divide(BigDecimal.valueOf(100));
+
+            saldoPendiente = saldoPendiente.add(interesMoratorio);
+
+            // Actualizar estado del préstamo
+            prestamo.setInteresMoratorioAplicado(true);
+            prestamo.setFechaUltimoInteres(hoy);
+            prestamoRepository.save(prestamo);
+        }
+
+        return saldoPendiente.doubleValue();
     }
 
     private PagoModel convertirEntidadAModelo(Pago pago) {
@@ -100,7 +132,6 @@ public class PagoServiceImpl implements PagoService {
                 .id(pago.getId())
                 .montoPago(pago.getMonto())
                 .fecha(pago.getFecha())
-                .deudaRestante(deudaRestante)
                 .prestamoId(pago.getPrestamo().getId())
                 .build();
     }
