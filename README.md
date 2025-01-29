@@ -163,57 +163,6 @@ Cuerpo de la solicitud:
 ```json
 [
     {
-        "id": 1,
-        "nombre": "Fabio Test",
-        "correo": "fab.test@example.com",
-        "cuenta": {
-            "id": 1,
-            "numeroCuenta": "72456723221",
-            "saldo": 12300.0,
-            "clienteId": 1
-        },
-        "prestamos": [
-            {
-                "id": 3,
-                "monto": 7000.00,
-                "interes": 115.00,
-                "fechaCreacion": "2024-12-30",
-                "estado": "APROBADO",
-                "clienteId": 1,
-                "pagos": [
-                    {
-                        "id": 8,
-                        "montoPago": 3550.00,
-                        "fecha": "2024-12-30",
-                        "prestamoId": 3
-                    },
-                    {
-                        "id": 9,
-                        "montoPago": 35.00,
-                        "fecha": "2024-12-30",
-                        "prestamoId": 3
-                    },
-                    {
-                        "id": 10,
-                        "montoPago": 15.00,
-                        "fecha": "2024-12-31",
-                        "prestamoId": 3
-                    }
-                ]
-            },
-            {
-                "id": 4,
-                "monto": 7000.00,
-                "interes": 115.00,
-                "fechaCreacion": "2024-12-31",
-                "estado": "APROBADO",
-                "clienteId": 1,
-                "pagos": []
-            }
-        ]
-    },
-    [
-    {
         "id": 10,
         "nombre": "deiv test",
         "correo": "dev@gmail.com",
