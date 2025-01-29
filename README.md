@@ -212,83 +212,58 @@ Cuerpo de la solicitud:
             }
         ]
     },
+    [
     {
-        "id": 3,
-        "nombre": "TEST Test",
-        "correo": "fabx.test@example.com",
+        "id": 10,
+        "nombre": "deiv test",
+        "correo": "dev@gmail.com",
         "cuenta": {
-            "id": 3,
-            "numeroCuenta": "76456723221",
-            "saldo": 12300.0,
-            "clienteId": 3
+            "id": 10,
+            "numeroCuenta": "7719696923",
+            "saldo": 30000.0,
+            "clienteId": 10
         },
         "prestamos": [
+            {
+                "id": 3,
+                "monto": 5000.00,
+                "interes": 10.00,
+                "fechaCreacion": "2025-01-26",
+                "fechaVencimiento": "2025-01-30",
+                "estado": "APROBADO",
+                "clienteId": 10,
+                "deudaRestante": 5500.0,
+                "interesMoratorio": 10.00,
+                "pagos": []
+            },
             {
                 "id": 5,
-                "monto": 7000.00,
-                "interes": 115.00,
-                "fechaCreacion": "2025-01-01",
-                "estado": "PENDIENTE",
-                "clienteId": 3,
+                "monto": 5000.00,
+                "interes": 10.00,
+                "fechaCreacion": "2025-01-26",
+                "fechaVencimiento": "2025-01-30",
+                "estado": "PAGADO",
+                "clienteId": 10,
+                "deudaRestante": 0.0,
+                "interesMoratorio": 10.00,
                 "pagos": [
                     {
-                        "id": 13,
-                        "montoPago": 15.00,
-                        "fecha": "2025-01-01",
+                        "id": 56,
+                        "montoPago": 2500.00,
+                        "fecha": "2025-01-26",
                         "prestamoId": 5
                     },
                     {
-                        "id": 14,
-                        "montoPago": 15.00,
-                        "fecha": "2025-01-01",
+                        "id": 57,
+                        "montoPago": 2500.00,
+                        "fecha": "2025-01-26",
                         "prestamoId": 5
-                    }
-                ]
-            }
-        ]
-    },
-    {
-        "id": 5,
-        "nombre": "Ale Test",
-        "correo": "aletesting@example.com",
-        "cuenta": {
-            "id": 5,
-            "numeroCuenta": "6919696996",
-            "saldo": 50000.0,
-            "clienteId": 5
-        },
-        "prestamos": []
-    },
-    {
-        "id": 6,
-        "nombre": "Diev Test",
-        "correo": "diev@example.com",
-        "cuenta": {
-            "id": 6,
-            "numeroCuenta": "6919696991",
-            "saldo": 50000.0,
-            "clienteId": 6
-        },
-        "prestamos": [
-            {
-                "id": 7,
-                "monto": 7000.00,
-                "interes": 15.00,
-                "fechaCreacion": "2025-01-03",
-                "estado": "APROBADO",
-                "clienteId": 6,
-                "pagos": [
-                    {
-                        "id": 33,
-                        "montoPago": 6005.00,
-                        "fecha": "2025-01-15",
-                        "prestamoId": 7
                     },
                     {
-                        "id": 34,
+                        "id": 58,
                         "montoPago": 500.00,
-                        "fecha": "2025-01-15",
-                        "prestamoId": 7
+                        "fecha": "2025-01-26",
+                        "prestamoId": 5
                     }
                 ]
             }
