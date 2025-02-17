@@ -1,6 +1,8 @@
 package com.prestamosrapidos.prestamos_app.service;
 
+import com.prestamosrapidos.prestamos_app.entity.Prestamo;
 import com.prestamosrapidos.prestamos_app.model.PrestamoModel;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -15,4 +17,6 @@ public interface PrestamoService {
     Double calcularInteresTotal(Long prestamoId);
     Double calcularMontoRestante(Long prestamoId);
 
+    @Transactional
+    void verificarYActualizarEstado(Prestamo prestamo);
 }

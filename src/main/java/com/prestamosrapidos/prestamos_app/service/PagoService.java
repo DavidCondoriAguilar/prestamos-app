@@ -1,7 +1,9 @@
 package com.prestamosrapidos.prestamos_app.service;
 
+import com.prestamosrapidos.prestamos_app.entity.Prestamo;
 import com.prestamosrapidos.prestamos_app.model.PagoModel;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public interface PagoService {
@@ -9,5 +11,7 @@ public interface PagoService {
     List<PagoModel> obtenerPagosPorPrestamo(Long prestamoId);
     PagoModel obtenerPagoPorId(Long id);
     void eliminarPago(Long id);
-    Double calcularMontoRestante(Long prestamoId);
+    BigDecimal calcularMontoRestante(Long prestamoId);
+
+    void verificarYActualizarEstado(Prestamo prestamo);
 }

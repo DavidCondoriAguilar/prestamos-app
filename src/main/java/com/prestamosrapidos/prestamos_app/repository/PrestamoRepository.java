@@ -25,4 +25,6 @@ public interface PrestamoRepository extends JpaRepository<Prestamo, Long> {
     /*List<Prestamo> findByFechaVencimientoLessThanEqualAndNotificadoFalse(LocalDate fecha);*/
     List<Prestamo> findByFechaVencimientoBeforeAndInteresMoratorioAplicadoFalse(LocalDate fecha);
 
+    @Query("SELECT p FROM Prestamo p WHERE p.fechaVencimiento < :hoy AND p.estado NOT IN (com.prestamosrapidos.prestamos_app.entity.enums.EstadoPrestamo.PAGADO)")
+    List<Prestamo> findPrestamosVencidosNoPagados(LocalDate hoy);
 }

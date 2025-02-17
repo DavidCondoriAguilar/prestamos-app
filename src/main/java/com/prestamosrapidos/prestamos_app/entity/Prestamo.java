@@ -46,7 +46,7 @@ public class Prestamo {
     @NotNull
     @Digits(integer = 5, fraction = 2)
     @Column(nullable = false, precision = 5, scale = 2)
-    private BigDecimal interes;
+    private BigDecimal interes = BigDecimal.ZERO;
 
     @NotNull
     @PastOrPresent
@@ -54,7 +54,6 @@ public class Prestamo {
     @Column(name = "fecha_creacion", nullable = false, updatable = false)
     private LocalDateTime fechaCreacion;
 
-    @Future
     @Column(name = "fecha_vencimiento")
     private LocalDate fechaVencimiento;
 
@@ -82,7 +81,25 @@ public class Prestamo {
     @OneToMany(mappedBy = "prestamo", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
+    @Builder.Default
     private List<Pago> pagos = new ArrayList<>();
+
+    @Column(precision = 15, scale = 2)
+    private BigDecimal saldoMoratorio = BigDecimal.ZERO;
+
+    @Column(name = "mora_aplicada", nullable = false)
+    private boolean moraAplicada = false;
+
+    @Column
+    private LocalDate fechaUltimaMora;
+
+    @CreatedDate
+    @Column(name = "fecha_creacion_auditoria", updatable = false)
+    private LocalDateTime fechaCreacionAuditoria;
+
+    @LastModifiedDate
+    @Column(name = "fecha_modificacion_auditoria")
+    private LocalDateTime fechaModificacionAuditoria;
 
    /* @LastModifiedDate
     @Column(name = "fecha_actualizacion", nullable = false)

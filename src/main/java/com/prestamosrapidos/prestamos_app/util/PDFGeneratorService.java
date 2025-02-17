@@ -5,7 +5,6 @@ import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
 import com.prestamosrapidos.prestamos_app.entity.Cliente;
-import com.prestamosrapidos.prestamos_app.entity.Cuenta;
 import com.prestamosrapidos.prestamos_app.entity.Pago;
 import com.prestamosrapidos.prestamos_app.entity.Prestamo;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
 
@@ -31,7 +31,7 @@ public class PDFGeneratorService {
             PdfWriter.getInstance(document, out);
             document.open();
 
-            // Agregar imagen al PDF
+            // Agregar imagen
             String imagePath = "src/main/resources/images/image.jpg";
             Image image = Image.getInstance(imagePath);
             image.setAlignment(Element.ALIGN_CENTER);
@@ -58,10 +58,15 @@ public class PDFGeneratorService {
             Paragraph summaryTitle = new Paragraph("Resumen General", boldFont);
             summaryTitle.setSpacingAfter(10);
             document.add(summaryTitle);
-            document.add(new Paragraph("Número de cuentas: " + cliente.getCuentas().size(), normalFont));
-            document.add(new Paragraph("Número de préstamos: " + cliente.getPrestamos().size(), normalFont));
 
-            // Tabla de cuentas
+            if (cliente.getCuentas() != null && !cliente.getCuentas().isEmpty()) {
+                document.add(new Paragraph("Número de cuentas: " + cliente.getCuentas().size(), normalFont));
+            }
+            if (cliente.getPrestamos() != null) {
+                document.add(new Paragraph("Número de préstamos: " + cliente.getPrestamos().size(), normalFont));
+            }
+
+            // Tabla de Cuentas
             if (cliente.getCuentas() != null && !cliente.getCuentas().isEmpty()) {
                 document.add(Chunk.NEWLINE);
                 Paragraph accountTitle = new Paragraph("Cuentas del Cliente", boldFont);
@@ -72,41 +77,71 @@ public class PDFGeneratorService {
                 accountTable.setWidthPercentage(100);
                 addTableHeader(accountTable, "Número de Cuenta", "Saldo", "Cliente ID");
 
-                for (Cuenta cuenta : cliente.getCuentas()) {
+                cliente.getCuentas().forEach(cuenta -> {
                     accountTable.addCell(cuenta.getNumeroCuenta());
                     accountTable.addCell("S/ " + DECIMAL_FORMAT.format(cuenta.getSaldo()));
                     accountTable.addCell(String.valueOf(cuenta.getCliente().getId()));
-                }
-
+                });
                 document.add(accountTable);
             }
 
-            // Tabla de préstamos
+            // Tabla de Préstamos
             if (cliente.getPrestamos() != null && !cliente.getPrestamos().isEmpty()) {
                 document.add(Chunk.NEWLINE);
                 Paragraph loanTitle = new Paragraph("Préstamos del Cliente", boldFont);
                 loanTitle.setSpacingAfter(10);
                 document.add(loanTitle);
 
-                PdfPTable loanTable = new PdfPTable(4);
+                // Se muestran 8 columnas: Monto, Interés, Interés Moratorio, Fecha Creación, Fecha Vencimiento, Estado, Deuda Restante, Saldo Moratorio
+                PdfPTable loanTable = new PdfPTable(8);
                 loanTable.setWidthPercentage(100);
-                addTableHeader(loanTable, "Monto", "Interés", "Fecha de Creación", "Estado");
+                addTableHeader(loanTable, "Monto", "Interés", "Interés Moratorio", "Fecha Creación",
+                        "Fecha Vencimiento", "Estado", "Deuda Restante", "Saldo Moratorio");
 
-                DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+                DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
                 for (Prestamo prestamo : cliente.getPrestamos()) {
+                    // Monto y porcentajes
                     loanTable.addCell("S/ " + DECIMAL_FORMAT.format(prestamo.getMonto()));
                     loanTable.addCell(prestamo.getInteres() + " %");
-                    loanTable.addCell(prestamo.getFechaCreacion() != null
-                            ? prestamo.getFechaCreacion().format(dateFormatter)
-                            : "Fecha no disponible");
-                    loanTable.addCell(String.valueOf(prestamo.getEstado()));
-                }
+                    loanTable.addCell(prestamo.getInteresMoratorio() + " %");
 
+                    // Fecha de creación (convertimos LocalDateTime a LocalDate)
+                    String fechaCreacionStr = (prestamo.getFechaCreacion() != null)
+                            ? prestamo.getFechaCreacion().toLocalDate().format(dtf)
+                            : "No disponible";
+                    loanTable.addCell(fechaCreacionStr);
+
+                    // Fecha de vencimiento
+                    String fechaVencimientoStr = (prestamo.getFechaVencimiento() != null)
+                            ? prestamo.getFechaVencimiento().format(dtf)
+                            : "No disponible";
+                    loanTable.addCell(fechaVencimientoStr);
+
+                    // Estado (asumimos que es un enum)
+                    loanTable.addCell(prestamo.getEstado().name());
+
+                    // Calcular deuda restante: (monto + (monto * (interés / 100))) - totalPagado
+                    BigDecimal totalConInteres = prestamo.getMonto()
+                            .multiply(BigDecimal.ONE.add(prestamo.getInteres().divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP)));
+                    BigDecimal totalPagado = prestamo.getPagos().stream()
+                            .map(Pago::getMonto)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    BigDecimal deudaRestante = totalConInteres.subtract(totalPagado);
+                    loanTable.addCell("S/ " + DECIMAL_FORMAT.format(deudaRestante));
+
+                    // Saldo moratorio: verificación para evitar null
+                    if (prestamo.getSaldoMoratorio() != null) {
+                        loanTable.addCell("S/ " + DECIMAL_FORMAT.format(prestamo.getSaldoMoratorio()));
+                    } else {
+                        loanTable.addCell("N/A");
+                    }
+                }
                 document.add(loanTable);
             }
 
-            // Tabla de pagos
+
+            // Tabla de Pagos
             if (cliente.getPrestamos() != null && !cliente.getPrestamos().isEmpty()) {
                 document.add(Chunk.NEWLINE);
                 Paragraph paymentTitle = new Paragraph("Pagos Realizados", boldFont);
@@ -117,33 +152,33 @@ public class PDFGeneratorService {
                 paymentTable.setWidthPercentage(100);
                 addTableHeader(paymentTable, "Monto del Pago", "Fecha", "Préstamo ID");
 
-                DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-
+                DateTimeFormatter dtfPago = DateTimeFormatter.ofPattern("dd/MM/yyyy");
                 for (Prestamo prestamo : cliente.getPrestamos()) {
                     for (Pago pago : prestamo.getPagos()) {
                         paymentTable.addCell("S/ " + DECIMAL_FORMAT.format(pago.getMonto()));
-                        paymentTable.addCell(pago.getFecha() != null
-                                ? pago.getFecha().format(dateFormatter)
-                                : "Fecha no disponible");
-                        paymentTable.addCell(String.valueOf(pago.getPrestamo().getId()));
+                        String fechaPagoStr = (pago.getFecha() != null)
+                                ? pago.getFecha().format(dtfPago)
+                                : "No disponible";
+                        paymentTable.addCell(fechaPagoStr);
+                        paymentTable.addCell(String.valueOf(prestamo.getId()));
                     }
                 }
-
                 document.add(paymentTable);
             }
 
-            // Cálculo del total restante
+            // Cálculo total de la deuda de todos los préstamos
             if (cliente.getPrestamos() != null && !cliente.getPrestamos().isEmpty()) {
-                BigDecimal totalPrestamos = cliente.getPrestamos().stream()
-                        .map(Prestamo::getMonto)
+                BigDecimal totalConInteres = cliente.getPrestamos().stream()
+                        .map(prestamo -> prestamo.getMonto()
+                                .multiply(BigDecimal.ONE.add(prestamo.getInteres().divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP))))
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
-        
-                BigDecimal totalPagos = cliente.getPrestamos().stream()
+
+                BigDecimal totalPagado = cliente.getPrestamos().stream()
                         .flatMap(prestamo -> prestamo.getPagos().stream())
                         .map(Pago::getMonto)
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
-        
-                BigDecimal totalRestante = totalPrestamos.subtract(totalPagos);
+
+                BigDecimal totalRestante = totalConInteres.subtract(totalPagado);
 
                 document.add(Chunk.NEWLINE);
                 Paragraph totalRestanteParagraph = new Paragraph(
@@ -162,9 +197,8 @@ public class PDFGeneratorService {
 
     private void addTableHeader(PdfPTable table, String... headers) {
         Font headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12, BaseColor.WHITE);
-        PdfPCell cell;
         for (String header : headers) {
-            cell = new PdfPCell(new Phrase(header, headerFont));
+            PdfPCell cell = new PdfPCell(new Phrase(header, headerFont));
             cell.setHorizontalAlignment(Element.ALIGN_CENTER);
             cell.setBackgroundColor(BaseColor.DARK_GRAY);
             table.addCell(cell);

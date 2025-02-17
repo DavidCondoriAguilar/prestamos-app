@@ -12,6 +12,7 @@ import java.util.List;
 @Setter
 
 public class ClienteModel {
+
     private Long id;
     private String nombre;
     private String correo;

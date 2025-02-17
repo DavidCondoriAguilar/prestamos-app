@@ -16,6 +16,6 @@ public class SwaggerConfig {
                         .title("API de Préstamos Rápidos")
                         .version("1.0")
                         .description("Documentación interactiva de la API de Préstamos Rápidos")
-                        .license(new License().name("Apache 2.0").url("http://springdoc.org")));
+                        .license(new License().name("Apache 2.0").url("https://springdoc.org")));
     }
 }

@@ -14,15 +14,19 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PrestamoModel {
+
     private Long id;
     private BigDecimal monto;
     private BigDecimal interes;
+    private BigDecimal interesMoratorio;
     private LocalDate fechaCreacion;
     private LocalDate fechaVencimiento;
     private String estado;
     private Long clienteId;
     private double deudaRestante;
-    private BigDecimal interesMoratorio;
+/*
+    private BigDecimal saldoMoratorio;
+*/
     private List<PagoModel> pagos;
 
 }

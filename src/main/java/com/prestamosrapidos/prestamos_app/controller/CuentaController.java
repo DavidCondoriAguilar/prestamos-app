@@ -75,7 +75,7 @@ public class CuentaController {
      * Obtener una cuenta por el ID del cliente
      *
      * @param clienteId el ID del cliente
-     * @return la cuenta asociada al cliente
+     * @return la cuenta asociada al clientestatus
      */
     @GetMapping("/cliente/{clienteId}")
     public ResponseEntity<CuentaModel> obtenerCuentaPorCliente(@PathVariable Long clienteId) {

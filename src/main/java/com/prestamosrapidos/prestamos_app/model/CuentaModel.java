@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CuentaModel {
+
     private Long id;
     private String numeroCuenta;
     private Double saldo;

@@ -29,7 +29,6 @@ public class ClienteController {
         }
     }
 
-
     // Endpoint para obtener todos los clientes
     @GetMapping
     public ResponseEntity<List<ClienteModel>> obtenerTodosLosClientes() {
