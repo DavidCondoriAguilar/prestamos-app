@@ -8,7 +8,7 @@ Esta API facilita operaciones como la creación de clientes, la gestión de cuen
 Características
 
 - Gestión de clientes (crear, leer, actualizar, eliminar).
-- Creación de préstamos con montos, tasas de interés y estado (aprobado, pendiente).
+- Creación de préstamos con montos, tasas de interés y estado (aprobado, pendiente, pagado).
 - Registro de pagos asociados a los préstamos.
 - Manejo de cuentas bancarias para cada cliente, con saldo disponible y número de cuenta.
 - Consultas para obtener la información completa del cliente, préstamos y pagos.
