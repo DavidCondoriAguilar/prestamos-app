@@ -16,7 +16,6 @@ public class ClienteController {
 
     private final ClienteService clienteService;
 
-    // Endpoint para crear un nuevo cliente
     @PostMapping
     public ResponseEntity<ClienteModel> crearCliente(@RequestBody ClienteModel clienteModel) {
         try {
@@ -29,14 +28,12 @@ public class ClienteController {
         }
     }
 
-    // Endpoint para obtener todos los clientes
     @GetMapping
     public ResponseEntity<List<ClienteModel>> obtenerTodosLosClientes() {
         List<ClienteModel> clientes = clienteService.obtenerTodosLosClientes();
         return new ResponseEntity<>(clientes, HttpStatus.OK);
     }
 
-    // Endpoint para obtener un cliente por ID
     @GetMapping("/{id}")
     public ResponseEntity<ClienteModel> obtenerClientePorId(@PathVariable Long id) {
         try {
@@ -47,7 +44,6 @@ public class ClienteController {
         }
     }
 
-    // Endpoint para actualizar un cliente
     @PutMapping("/{id}")
     public ResponseEntity<ClienteModel> actualizarCliente(
             @PathVariable Long id, @RequestBody ClienteModel clienteModel) {
@@ -59,7 +55,6 @@ public class ClienteController {
         }
     }
 
-    // Endpoint para eliminar un cliente
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarCliente(@PathVariable Long id) {
         try {

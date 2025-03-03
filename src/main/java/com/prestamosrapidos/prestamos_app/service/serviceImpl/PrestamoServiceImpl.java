@@ -265,7 +265,7 @@ public class PrestamoServiceImpl implements PrestamoService {
     }
 
     private PrestamoModel convertirEntidadAModelo(Prestamo prestamo) {
-        // Obtener el interés moratorio o usar 10.00 como valor por defecto si es null
+
         BigDecimal interesMoratorio = prestamo.getInteresMoratorio() != null
                 ? prestamo.getInteresMoratorio()
                 : BigDecimal.valueOf(10.00);

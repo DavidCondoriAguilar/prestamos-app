@@ -186,7 +186,7 @@ public class PagoServiceImpl implements PagoService {
 
     private PagoModel convertirEntidadAModelo(Pago pago) {
         return PagoModel.builder()
-                .id(pago.getId())
+                .id(pago.getId()) 
                 .montoPago(pago.getMonto())
                 .fecha(pago.getFecha())
                 .prestamoId(pago.getPrestamo().getId())

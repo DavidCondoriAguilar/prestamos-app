@@ -19,7 +19,8 @@ import java.util.List;
 public class PagoController {
 
     private final PagoService pagoService;
-    @PostMapping()
+
+    @PostMapping("/{prestamoId}")
     public ResponseEntity<PagoModel> registrarPago(@RequestBody @Valid PagoModel pagoModel) {
         PagoModel pagoRegistrado = pagoService.registrarPago(pagoModel);
         return ResponseEntity.status(201).body(pagoRegistrado);
