@@ -5,6 +5,10 @@ import com.prestamosrapidos.prestamos_app.service.PagoService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +23,24 @@ import java.util.List;
 public class PagoController {
 
     private final PagoService pagoService;
+
+    /**
+     * Endpoint para listar todos los pagos con paginación.
+     *
+     * @param page Número de página (comienza desde 0).
+     * @param size Tamaño de la página (número de elementos por página).
+     * @return Página de pagos en formato JSON.
+     */
+    @GetMapping
+    public ResponseEntity<Page<PagoModel>> listarTodosLosPagosPaginados(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("fecha").descending());
+        Page<PagoModel> pagos = pagoService.obtenerTodosLosPagosPaginados(pageable);
+
+        return ResponseEntity.ok(pagos);
+    }
 
     @PostMapping("/{prestamoId}")
     public ResponseEntity<PagoModel> registrarPago(@RequestBody @Valid PagoModel pagoModel) {

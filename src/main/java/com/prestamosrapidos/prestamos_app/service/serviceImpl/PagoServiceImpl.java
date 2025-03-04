@@ -12,6 +12,8 @@ import com.prestamosrapidos.prestamos_app.validation.PagoValidator;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +33,10 @@ public class PagoServiceImpl implements PagoService {
 
     private static final Logger log = LoggerFactory.getLogger(PagoServiceImpl.class);
 
+    @Override
+    public Page<PagoModel> obtenerTodosLosPagosPaginados(Pageable pageable) {
+        return pagoRepository.findAll(pageable).map(this::convertirEntidadAModelo);
+    }
     @Override
     @Transactional
     public PagoModel registrarPago(PagoModel pagoModel) {

@@ -1,6 +1,8 @@
 package com.prestamosrapidos.prestamos_app.repository;
 
 import com.prestamosrapidos.prestamos_app.entity.Pago;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,5 +16,6 @@ public interface PagoRepository extends JpaRepository<Pago, Long> {
 
     @Query("SELECT COALESCE(SUM(p.monto), 0) FROM Pago p WHERE p.prestamo.id = :prestamoId")
     Double calcularTotalPagado(@Param("prestamoId") Long prestamoId);
-    
+
+    Page<Pago> findAll(Pageable pageable);
 }
