@@ -5,6 +5,7 @@ import com.prestamosrapidos.prestamos_app.entity.Pago;
 import com.prestamosrapidos.prestamos_app.entity.Prestamo;
 import com.prestamosrapidos.prestamos_app.entity.enums.EstadoPrestamo;
 import com.prestamosrapidos.prestamos_app.exception.RecursoNoEncontradoException;
+import com.prestamosrapidos.prestamos_app.model.EstadoModel;
 import com.prestamosrapidos.prestamos_app.model.PagoModel;
 import com.prestamosrapidos.prestamos_app.model.PrestamoModel;
 import com.prestamosrapidos.prestamos_app.repository.ClienteRepository;
@@ -95,6 +96,22 @@ public class PrestamoServiceImpl implements PrestamoService {
         // Guardar los cambios
         Prestamo updatedPrestamo = prestamoRepository.save(prestamo);
         return convertirEntidadAModelo(updatedPrestamo);
+    }
+
+    @Override
+    public PrestamoModel actualizarEstado(Long id, EstadoModel nuevoEstado) {
+        Prestamo prestamo = prestamoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Préstamo no encontrado"));
+
+        if (prestamo.getEstado().equals(EstadoPrestamo.PAGADO)) {
+            throw new IllegalStateException("No se puede modificar un préstamo pagado");
+        }
+
+        EstadoPrestamo estado = EstadoPrestamo.fromString(nuevoEstado.getNuevoEstado());  // Corregido
+        prestamo.setEstado(estado);
+
+        Prestamo prestamoActualizado = prestamoRepository.save(prestamo);
+        return convertirEntidadAModelo(prestamoActualizado);
     }
 
 

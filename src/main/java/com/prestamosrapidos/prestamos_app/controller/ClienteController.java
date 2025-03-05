@@ -2,6 +2,7 @@ package com.prestamosrapidos.prestamos_app.controller;
 
 import com.prestamosrapidos.prestamos_app.model.ClienteModel;
 import com.prestamosrapidos.prestamos_app.service.ClienteService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

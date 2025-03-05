@@ -1,5 +1,6 @@
 package com.prestamosrapidos.prestamos_app.controller;
 
+import com.prestamosrapidos.prestamos_app.model.EstadoModel;
 import com.prestamosrapidos.prestamos_app.model.PrestamoModel;
 import com.prestamosrapidos.prestamos_app.service.PrestamoService;
 import jakarta.validation.Valid;
@@ -31,6 +32,16 @@ public class PrestamoController {
             @Valid @RequestBody PrestamoModel prestamoModel) {
         return ResponseEntity.ok(prestamoService.actualizarPrestamo(id, prestamoModel));
     }
+
+    @PutMapping("/{id}/estado")
+    public ResponseEntity<PrestamoModel> actualizarEstado(
+            @PathVariable Long id,
+            @RequestBody EstadoModel estadoRequest) {
+
+        PrestamoModel prestamoActualizado = prestamoService.actualizarEstado(id, estadoRequest);
+        return ResponseEntity.ok(prestamoActualizado);
+    }
+
 
     @GetMapping("/{id}")
     public ResponseEntity<PrestamoModel> obtenerPrestamoPorId(@PathVariable @Min(1) Long id) {

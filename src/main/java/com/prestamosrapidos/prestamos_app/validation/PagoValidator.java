@@ -12,7 +12,7 @@ import java.time.LocalDate;
 public class PagoValidator {
 
     /**
-     * Valida el ID del préstamo.
+     * Valida que el ID del préstamo no sea nulo.
      *
      * @param prestamoId ID del préstamo
      */
@@ -23,7 +23,7 @@ public class PagoValidator {
     }
 
     /**
-     * Valida el monto del pago.
+     * Valida que el monto del pago sea mayor a cero.
      *
      * @param montoPago Monto del pago
      */
@@ -35,20 +35,17 @@ public class PagoValidator {
     }
 
     /**
-     * Valida que el monto del pago no exceda el monto restante del préstamo.
+     * Valida que el monto del pago no exceda el saldo pendiente del préstamo.
      *
-     * @param montoPago       Monto del pago
-     * @param saldoPendiente   saldoPendiente del préstamo
+     * @param montoPago      Monto del pago
+     * @param saldoPendiente Saldo pendiente del préstamo
      */
-
-    /*public static void validarMontoContraRestante(BigDecimal montoPago, BigDecimal saldoPendiente) {
-        BigDecimal tolerancia = BigDecimal.valueOf(0.01); // Tolerancia para redondeos
-        if (montoPago.subtract(saldoPendiente).abs().compareTo(tolerancia) > 0) {
-            log.error("El monto del pago ({}) excede el saldo pendiente del préstamo ({}).",
-                    montoPago, saldoPendiente);
-            throw new IllegalArgumentException("El pago no puede exceder el saldo pendiente del préstamo.");
+    public static void validarMontoContraRestante(BigDecimal montoPago, BigDecimal saldoPendiente) {
+        if (montoPago.compareTo(saldoPendiente) > 0) {
+            log.error("El monto del pago ({}) excede el saldo pendiente del préstamo ({}).", montoPago, saldoPendiente);
+            throw new IllegalArgumentException("El pago no puede ser mayor que la deuda pendiente.");
         }
-    }*/
+    }
 
     /**
      * Valida la existencia de un préstamo.
@@ -63,30 +60,26 @@ public class PagoValidator {
     }
 
     /**
-     * Realiza todas las validaciones necesarias para registrar un pago.
+     * Valida todas las reglas necesarias antes de registrar un pago.
      *
      * @param pagoModel      Modelo del pago
      * @param prestamo       Préstamo asociado
-     * @param saldoPendiente  saldoPendiente del préstamo
+     * @param saldoPendiente Saldo pendiente del préstamo
      */
     public static void validarPago(PagoModel pagoModel, Prestamo prestamo, BigDecimal saldoPendiente) {
         validarPrestamoId(pagoModel.getPrestamoId());
         validarMontoPago(pagoModel.getMontoPago());
         validarExistenciaPrestamo(prestamo);
-/*
         validarMontoContraRestante(pagoModel.getMontoPago(), saldoPendiente);
-*/
 
         if (prestamo.getEstado() == EstadoPrestamo.PAGADO) {
-            log.error("No se pueden registrar pagos para un préstamo ya pagado. Préstamo ID={}", prestamo.getId());
-            throw new IllegalArgumentException("No se pueden registrar pagos para un préstamo ya pagado.");
+            log.error("Intento de pago en préstamo pagado. Préstamo ID={}", prestamo.getId());
+            throw new IllegalArgumentException("No se pueden registrar pagos en un préstamo ya pagado.");
         }
 
         if (prestamo.getEstado() == EstadoPrestamo.RECHAZADO) {
-            log.error("No se pueden registrar pagos para un préstamo rechazado. Préstamo ID={}", prestamo.getId());
-            throw new IllegalArgumentException("No se pueden registrar pagos para un préstamo rechazado.");
+            log.error("Intento de pago en préstamo rechazado. Préstamo ID={}", prestamo.getId());
+            throw new IllegalArgumentException("No se pueden registrar pagos en un préstamo rechazado.");
         }
     }
-
-
 }

@@ -37,6 +37,7 @@ public class PagoServiceImpl implements PagoService {
     public Page<PagoModel> obtenerTodosLosPagosPaginados(Pageable pageable) {
         return pagoRepository.findAll(pageable).map(this::convertirEntidadAModelo);
     }
+
     @Override
     @Transactional
     public PagoModel registrarPago(PagoModel pagoModel) {
