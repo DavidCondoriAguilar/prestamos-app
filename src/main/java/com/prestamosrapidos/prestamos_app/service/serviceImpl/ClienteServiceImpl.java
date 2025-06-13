@@ -17,12 +17,18 @@ import com.prestamosrapidos.prestamos_app.service.PrestamoService;
 import com.prestamosrapidos.prestamos_app.validation.ClienteValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ClienteServiceImpl implements ClienteService {
@@ -34,6 +40,7 @@ public class ClienteServiceImpl implements ClienteService {
     private final PrestamoService prestamoService;
     private final ClienteValidator clienteValidator;
 
+    @Transactional
     @Override
     public ClienteModel crearCliente(ClienteModel clienteModel) {
         clienteValidator.validateClienteModel(clienteModel);
@@ -45,9 +52,23 @@ public class ClienteServiceImpl implements ClienteService {
                 .build();
 
         if (clienteModel.getCuenta() != null) {
-            if (cuentaRepository.existsByNumeroCuenta(clienteModel.getCuenta().getNumeroCuenta())) {
+            String numeroCuenta = clienteModel.getCuenta().getNumeroCuenta();
+            log.debug("Verificando número de cuenta: {}", numeroCuenta);
+            
+            // Verificar si el número de cuenta tiene el formato correcto
+            if (numeroCuenta == null || numeroCuenta.trim().isEmpty()) {
+                log.warn("Número de cuenta inválido: {}", numeroCuenta);
+                throw new IllegalArgumentException("El número de cuenta no puede ser nulo o vacío");
+            }
+            
+            // Verificar si el número de cuenta ya existe
+            boolean existeCuenta = cuentaRepository.existsByNumeroCuenta(numeroCuenta);
+            log.debug("Cuenta existe en la base de datos: {}", existeCuenta);
+            
+            if (existeCuenta) {
+                log.warn("Número de cuenta ya existe: {}", numeroCuenta);
                 throw new IllegalArgumentException("El número de cuenta ya está en uso: "
-                        + clienteModel.getCuenta().getNumeroCuenta());
+                        + numeroCuenta);
             }
 
             // Convertir la cuenta y asociarla al cliente
@@ -79,7 +100,6 @@ public class ClienteServiceImpl implements ClienteService {
         if (clienteModel.getCuenta() != null) {
             Cuenta cuenta = convertirACuenta(clienteModel.getCuenta(), clienteExistente);
 
-            // Si el cliente ya tiene cuentas, no duplicar
             // Verifica si la lista de cuentas del cliente no contiene la cuenta específica
             if (!clienteExistente.getCuentas().contains(cuenta)) {
                 clienteExistente.addCuenta(cuenta);
@@ -110,17 +130,9 @@ public class ClienteServiceImpl implements ClienteService {
     public void eliminarCliente(Long id) {
         Cliente cliente = clienteRepository.findById(id)
                 .orElseThrow(() -> new ClienteNotFoundException("Cliente no encontrado con ID: " + id));
-/*
-
-        for (Cuenta cuenta : cliente.getCuentas()) {
-            cuentaRepository.delete(cuenta);
+        if (!cliente.getPrestamos().isEmpty()) {
+            throw new IllegalStateException("No se puede eliminar un cliente con préstamos activos");
         }
-
-        for (Prestamo prestamo : cliente.getPrestamos()) {
-            prestamoRepository.delete(prestamo);
-        }
-*/
-
         // Luego eliminar el cliente
         clienteRepository.delete(cliente);
     }
@@ -186,6 +198,30 @@ public class ClienteServiceImpl implements ClienteService {
     private Cuenta convertirACuenta(CuentaModel cuentaModel, Cliente cliente) {
         if (cuentaModel == null) {
             return null;
+        }
+
+        // Validar que el saldo sea positivo
+        Double saldoDouble = cuentaModel.getSaldo();
+        log.debug("Saldo recibido: {}", saldoDouble);
+        
+        if (saldoDouble == null) {
+            log.warn("El saldo es nulo");
+            throw new IllegalArgumentException("El saldo inicial debe ser mayor a cero");
+        }
+        
+        if (saldoDouble <= 0) {
+            log.warn("El saldo es menor o igual a cero: {}", saldoDouble);
+            throw new IllegalArgumentException("El saldo inicial debe ser mayor a cero");
+        }
+        
+        // Convertir a BigDecimal con 2 decimales
+        BigDecimal saldo = BigDecimal.valueOf(saldoDouble).setScale(2, RoundingMode.HALF_UP);
+        log.debug("Saldo convertido a BigDecimal: {}", saldo);
+        
+        // Verificar que el saldo no sea demasiado grande
+        if (saldo.compareTo(new BigDecimal("999999999999.99")) > 0) {
+            log.warn("El saldo excede el límite máximo permitido: {}", saldo);
+            throw new IllegalArgumentException("El saldo excede el límite máximo permitido");
         }
 
         Cuenta cuenta = Cuenta.builder()

@@ -124,7 +124,7 @@ public class EXCELGeneratorService {
             List<Prestamo> prestamos = cliente.getPrestamos();
             for (Prestamo prestamo : prestamos) {
                 Row row = sheet.createRow(rowIndex++);
-                row.createCell(0).setCellValue("S/ " + DECIMAL_FORMAT.format(prestamo.getMonto()));
+                //row.createCell(0).setCellValue("S/ " + DECIMAL_FORMAT.format(prestamo.monto));
                 row.createCell(1).setCellValue(prestamo.getInteres() + " %");
                 row.createCell(2).setCellValue(prestamo.getFechaCreacion() != null ?
                         prestamo.getFechaCreacion().format(dateFormatter) : "Fecha no disponible");

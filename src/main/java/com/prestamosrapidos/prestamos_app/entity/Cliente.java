@@ -21,11 +21,9 @@ public class Cliente {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank
     @Column(nullable = false)
     private String nombre;
 
-    @NotBlank
     @Email
     @Column(unique = true, nullable = false)
     private String correo;

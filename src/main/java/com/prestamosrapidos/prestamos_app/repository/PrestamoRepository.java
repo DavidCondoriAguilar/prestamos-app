@@ -20,6 +20,8 @@ public interface PrestamoRepository extends JpaRepository<Prestamo, Long> {
     @Query("SELECT p FROM Prestamo p LEFT JOIN FETCH p.pagos WHERE p.id = :id")
     Optional<Prestamo> findByIdWithPagos(@Param("id") Long id);
 
+    List<Prestamo> findByEstadoInAndFechaVencimientoBefore(List<String> estados, LocalDate fechaVencimiento);
+
     /*List<Prestamo> findByFechaVencimientoBefore(LocalDate fecha); // Buscar préstamos próximos a vencer*/
 
     /*List<Prestamo> findByFechaVencimientoLessThanEqualAndNotificadoFalse(LocalDate fecha);*/

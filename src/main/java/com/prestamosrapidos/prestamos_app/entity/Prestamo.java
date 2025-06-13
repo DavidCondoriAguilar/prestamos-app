@@ -38,15 +38,27 @@ public class Prestamo {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "prestamo_seq")
     private Long id;
 
+    @Column(name = "deuda_restante", nullable = false)
+    private BigDecimal deudaRestante = BigDecimal.ZERO;
+
     @NotNull
     @Digits(integer = 19, fraction = 2)
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal monto;
 
     @NotNull
+    @NotNull
     @Digits(integer = 5, fraction = 2)
     @Column(nullable = false, precision = 5, scale = 2)
-    private BigDecimal interes = BigDecimal.ZERO;
+    private BigDecimal interes;
+
+    @Builder.Default
+    @Digits(integer = 5, fraction = 2)
+    @Column(name = "interes_moratorio", nullable = false)
+    private BigDecimal interesMoratorio = BigDecimal.valueOf(10.00); // 10% por defecto
+
+    @Column(name = "interes_moratorio_aplicado", nullable = false)
+    private Boolean interesMoratorioAplicado = false;
 
     @NotNull
     @PastOrPresent
@@ -67,16 +79,8 @@ public class Prestamo {
     @NotNull
     private Cliente cliente;
 
-    @Builder.Default
-    @Digits(integer = 5, fraction = 2)
-    @Column(name = "interes_moratorio", nullable = false)
-    private BigDecimal interesMoratorio = BigDecimal.valueOf(10.00); // 10% por defecto
-
     @PastOrPresent
     private LocalDate fechaUltimoInteres;
-
-    @Column(name = "interes_moratorio_aplicado", nullable = false)
-    private Boolean interesMoratorioAplicado = false;
 
     @OneToMany(mappedBy = "prestamo", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude

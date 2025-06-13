@@ -2,14 +2,15 @@ package com.prestamosrapidos.prestamos_app.controller;
 
 import com.prestamosrapidos.prestamos_app.model.ClienteModel;
 import com.prestamosrapidos.prestamos_app.service.ClienteService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/clientes")
 @RequiredArgsConstructor
@@ -19,12 +20,17 @@ public class ClienteController {
 
     @PostMapping
     public ResponseEntity<ClienteModel> crearCliente(@RequestBody ClienteModel clienteModel) {
+        log.debug("Recibida solicitud de creación de cliente: {}", clienteModel);
+        
         try {
             ClienteModel nuevoCliente = clienteService.crearCliente(clienteModel);
+            log.debug("Cliente creado exitosamente: {}", nuevoCliente);
             return new ResponseEntity<>(nuevoCliente, HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
+            log.error("Error al crear cliente: {}", e.getMessage());
             return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
+            log.error("Error inesperado al crear cliente: {}", e.getMessage());
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

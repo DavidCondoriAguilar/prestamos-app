@@ -1,6 +1,7 @@
 package com.prestamosrapidos.prestamos_app.validation;
 
 import com.prestamosrapidos.prestamos_app.entity.enums.EstadoPrestamo;
+import com.prestamosrapidos.prestamos_app.model.PagoModel;
 import com.prestamosrapidos.prestamos_app.model.PrestamoModel;
 
 import java.math.BigDecimal;
@@ -25,6 +26,44 @@ public class PrestamoValidator {
         validarEstado(prestamoModel.getEstado());
         validarClienteId(prestamoModel.getClienteId());
         validarFechas(prestamoModel.getFechaCreacion(), prestamoModel.getFechaVencimiento());
+        validarDeudaRestante(prestamoModel);
+        validarCalculos(prestamoModel);
+    }
+
+    private static void validarDeudaRestante(PrestamoModel prestamoModel) {
+        double deudaRestante = prestamoModel.getDeudaRestante();
+        if (deudaRestante < 0) {
+            throw new IllegalArgumentException("La deuda restante no puede ser negativa.");
+        }
+        if ("PAGADO".equals(prestamoModel.getEstado()) && 
+            deudaRestante != 0) {
+            throw new IllegalArgumentException("Un préstamo PAGADO debe tener deuda restante = 0");
+        }
+    }
+
+    private static void validarCalculos(PrestamoModel prestamoModel) {
+        if (prestamoModel.getMonto() != null && prestamoModel.getInteres() != null && 
+            prestamoModel.getPagos() != null) {
+            
+            BigDecimal totalPagos = BigDecimal.ZERO;
+            for (PagoModel pago : prestamoModel.getPagos()) {
+                if (pago.getMontoPago() != null) {
+                    totalPagos = totalPagos.add(pago.getMontoPago());
+                }
+            }
+
+            BigDecimal montoConInteres = prestamoModel.getMonto().add(prestamoModel.getInteres());
+            
+            // Convertimos el double a BigDecimal para la comparación
+            BigDecimal deudaRestante = BigDecimal.valueOf(prestamoModel.getDeudaRestante());
+            BigDecimal deudaCalculada = montoConInteres.subtract(totalPagos);
+            
+            // Comparamos usando BigDecimal
+            if (deudaRestante.compareTo(deudaCalculada) != 0) {
+                throw new IllegalArgumentException("La deuda restante no coincide con el cálculo: " +
+                    "(monto + interes) - total pagos = " + deudaCalculada);
+            }
+        }
     }
 
     private static void validarMonto(BigDecimal monto) {

@@ -26,9 +26,9 @@ public class ClienteValidator {
         if (clienteModel.getCorreo() == null || clienteModel.getCorreo().isBlank()) {
             throw new IllegalArgumentException("El correo del cliente no puede ser nulo o vacío");
         }
-        if (clienteRepository.existsByCorreo(clienteModel.getCorreo())) {
-            throw new IllegalArgumentException("El correo ya está en uso: " + clienteModel.getCorreo());
-        }
+//        if (clienteRepository.existsByCorreo(clienteModel.getCorreo())) {
+//            throw new IllegalArgumentException("El correo ya está en uso: " + clienteModel.getCorreo());
+//        }
 
     }
 

@@ -42,7 +42,6 @@ public class PrestamoController {
         return ResponseEntity.ok(prestamoActualizado);
     }
 
-
     @GetMapping("/{id}")
     public ResponseEntity<PrestamoModel> obtenerPrestamoPorId(@PathVariable @Min(1) Long id) {
         return ResponseEntity.ok(prestamoService.obtenerPrestamoPorId(id));

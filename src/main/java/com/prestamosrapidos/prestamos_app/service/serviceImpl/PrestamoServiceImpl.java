@@ -61,13 +61,14 @@ public class PrestamoServiceImpl implements PrestamoService {
                 .fechaVencimiento(prestamoModel.getFechaVencimiento())
                 .estado(estado)
                 .cliente(cliente)
+                .deudaRestante(prestamoModel.getMonto())
+                .interesMoratorioAplicado(false)
                 .build();
 
         Prestamo savedPrestamo = prestamoRepository.save(prestamo);
 
         return convertirEntidadAModelo(savedPrestamo);
     }
-
 
     @Override
     public PrestamoModel actualizarPrestamo(Long id, PrestamoModel prestamoModel) {
@@ -93,7 +94,6 @@ public class PrestamoServiceImpl implements PrestamoService {
         EstadoPrestamo estado = EstadoPrestamo.fromString(prestamoModel.getEstado());
         prestamo.setEstado(estado);
 
-        // Guardar los cambios
         Prestamo updatedPrestamo = prestamoRepository.save(prestamo);
         return convertirEntidadAModelo(updatedPrestamo);
     }
@@ -101,19 +101,30 @@ public class PrestamoServiceImpl implements PrestamoService {
     @Override
     public PrestamoModel actualizarEstado(Long id, EstadoModel nuevoEstado) {
         Prestamo prestamo = prestamoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Préstamo no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Préstamo no encontrado"));
 
-        if (prestamo.getEstado().equals(EstadoPrestamo.PAGADO)) {
-            throw new IllegalStateException("No se puede modificar un préstamo pagado");
+        EstadoPrestamo nuevoEstadoEnum = EstadoPrestamo.fromString(nuevoEstado.getEstado());
+        EstadoPrestamo estadoActual = prestamo.getEstado();
+
+        // Validaciones de estado
+        if (nuevoEstadoEnum == EstadoPrestamo.PAGADO) {
+            if (prestamo.getDeudaRestante() != null && 
+                prestamo.getDeudaRestante().compareTo(BigDecimal.ZERO) != 0) {
+                throw new IllegalArgumentException("No se puede marcar como PAGADO un préstamo con deuda restante");
+            }
         }
 
-        EstadoPrestamo estado = EstadoPrestamo.fromString(nuevoEstado.getNuevoEstado());  // Corregido
-        prestamo.setEstado(estado);
+        if (nuevoEstadoEnum == EstadoPrestamo.VENCIDO) {
+            if (prestamo.getFechaVencimiento() == null || 
+                prestamo.getFechaVencimiento().isAfter(LocalDate.now())) {
+                throw new IllegalArgumentException("No se puede marcar como VENCIDO un préstamo que no ha vencido");
+            }
+        }
 
-        Prestamo prestamoActualizado = prestamoRepository.save(prestamo);
-        return convertirEntidadAModelo(prestamoActualizado);
+        prestamo.setEstado(nuevoEstadoEnum);
+        Prestamo updatedPrestamo = prestamoRepository.save(prestamo);
+        return convertirEntidadAModelo(updatedPrestamo);
     }
-
 
     @Override
     public PrestamoModel obtenerPrestamoPorId(Long id) {
@@ -243,7 +254,6 @@ public class PrestamoServiceImpl implements PrestamoService {
                 .map(pago -> pago.getMonto() != null ? pago.getMonto() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
-
 
     @Scheduled(cron = "0 0 0 * * ?")
     @Transactional

@@ -10,5 +10,5 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class EstadoModel{
-    private String nuevoEstado;
+    private String estado;
 }
