@@ -70,7 +70,15 @@ public class PagoValidator {
         validarPrestamoId(pagoModel.getPrestamoId());
         validarMontoPago(pagoModel.getMontoPago());
         validarExistenciaPrestamo(prestamo);
-        validarMontoContraRestante(pagoModel.getMontoPago(), saldoPendiente);
+        
+        log.info("Validando pago - Monto: {}, Saldo Pendiente: {}", pagoModel.getMontoPago(), saldoPendiente);
+        
+        // Validación más flexible para el monto del pago
+        if (pagoModel.getMontoPago().compareTo(saldoPendiente) > 0) {
+            log.warn("Pago mayor a la deuda. Ajustando monto de {} a {}", 
+                    pagoModel.getMontoPago(), saldoPendiente);
+            pagoModel.setMontoPago(saldoPendiente);
+        }
 
         if (prestamo.getEstado() == EstadoPrestamo.PAGADO) {
             log.error("Intento de pago en préstamo pagado. Préstamo ID={}", prestamo.getId());

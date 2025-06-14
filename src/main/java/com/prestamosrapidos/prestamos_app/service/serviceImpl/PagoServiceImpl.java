@@ -22,6 +22,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -41,36 +42,68 @@ public class PagoServiceImpl implements PagoService {
     @Override
     @Transactional
     public PagoModel registrarPago(PagoModel pagoModel) {
+        log.info("Iniciando registro de pago: {}", pagoModel);
+        
+        // 1. Obtener y validar el préstamo
         Prestamo prestamo = prestamoRepository.findById(pagoModel.getPrestamoId())
                 .orElseThrow(() -> new RecursoNoEncontradoException("Préstamo no encontrado"));
 
-        BigDecimal deudaRestante = calcularMontoRestante(prestamo.getId());
+        // 2. Calcular deuda actual incluyendo intereses y mora
+        BigDecimal interesOrdinario = calcularInteresOrdinario(prestamo);
+        BigDecimal moraAcumulada = calcularMoraAcumulada(prestamo);
+        BigDecimal totalPagado = calcularTotalPagado(prestamo);
+        
+        BigDecimal deudaTotal = prestamo.getMonto()
+                .add(interesOrdinario)
+                .add(moraAcumulada);
+                
+        BigDecimal deudaPendiente = deudaTotal.subtract(totalPagado)
+                .max(BigDecimal.ZERO);
+                
+        log.info("Deuda total: {}, Pagado: {}, Pendiente: {}", 
+                deudaTotal, totalPagado, deudaPendiente);
 
-        PagoValidator.validarPago(pagoModel, prestamo, deudaRestante);
+        // 3. Validar pago
+        PagoValidator.validarPago(pagoModel, prestamo, deudaPendiente);
 
+        // 4. Crear y guardar el pago
         Pago pago = Pago.builder()
                 .monto(pagoModel.getMontoPago())
-                .fecha(LocalDate.now())
+                .fecha(pagoModel.getFecha() != null ? pagoModel.getFecha() : LocalDate.now())
                 .prestamo(prestamo)
                 .build();
 
         prestamo.addPago(pago);
+        
+        // 5. Actualizar deuda y estado del préstamo
+        BigDecimal nuevoTotalPagado = totalPagado.add(pagoModel.getMontoPago());
+        boolean estaPagado = nuevoTotalPagado.compareTo(deudaTotal) >= 0;
+        
+        if (estaPagado) {
+            prestamo.setEstado(EstadoPrestamo.PAGADO);
+            prestamo.setDeudaRestante(BigDecimal.ZERO);
+            log.info("Préstamo {} marcado como PAGADO", prestamo.getId());
+        } else {
+            BigDecimal nuevoSaldo = deudaTotal.subtract(nuevoTotalPagado);
+            prestamo.setDeudaRestante(nuevoSaldo);
+            // Actualizar estado según vencimiento
+            LocalDate hoy = LocalDate.now();
+            if (prestamo.getFechaVencimiento() != null && hoy.isAfter(prestamo.getFechaVencimiento())) {
+                prestamo.setEstado(EstadoPrestamo.EN_MORA);
+            } else {
+                prestamo.setEstado(EstadoPrestamo.APROBADO);
+            }
+            log.info("Nuevo saldo del préstamo {}: {}", prestamo.getId(), nuevoSaldo);
+        }
 
-        BigDecimal interesMoratorio = calcularInteresMoratorio(prestamo, LocalDate.now());
-        BigDecimal nuevoSaldo = calcularNuevoSaldo(deudaRestante, pagoModel.getMontoPago(), interesMoratorio);
-
-        actualizarEstadoPrestamo(prestamo, nuevoSaldo, LocalDate.now());
-
-        pagoRepository.save(pago);
-        prestamoRepository.save(prestamo);
-
+        // 6. Guardar cambios
+        pago = pagoRepository.save(pago);
+        prestamo = prestamoRepository.save(prestamo);
+        
+        log.info("Pago registrado exitosamente. ID: {}, Monto: {}", pago.getId(), pago.getMonto());
         return convertirEntidadAModelo(pago);
     }
-
-    /**
-     * Calcula el nuevo saldo del préstamo después de aplicar un pago y los intereses moratorios.
-     * Este método está preparado para futuras funcionalidades relacionadas con simulaciones de pagos.
-     */
+    
     private BigDecimal calcularNuevoSaldo(BigDecimal saldoPendiente, BigDecimal montoPago, BigDecimal interesMoratorio) {
         BigDecimal nuevoSaldo = saldoPendiente.add(interesMoratorio).subtract(montoPago);
         BigDecimal tolerancia = BigDecimal.valueOf(0.01);
@@ -198,5 +231,46 @@ public class PagoServiceImpl implements PagoService {
                 .fecha(pago.getFecha())
                 .prestamoId(pago.getPrestamo().getId())
                 .build();
+    }
+    
+    private BigDecimal calcularInteresOrdinario(Prestamo prestamo) {
+        // Interés ordinario = monto * (tasa_interes / 100)
+        return prestamo.getMonto()
+                .multiply(prestamo.getInteres())
+                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+    }
+    
+    private BigDecimal calcularMoraAcumulada(Prestamo prestamo) {
+        if (prestamo.getFechaVencimiento() == null || 
+                LocalDate.now().isBefore(prestamo.getFechaVencimiento())) {
+            return BigDecimal.ZERO;
+        }
+        
+        // Días de mora
+        long diasMora = ChronoUnit.DAYS.between(
+                prestamo.getFechaVencimiento(), 
+                LocalDate.now()
+        );
+        
+        if (diasMora <= 0) {
+            return BigDecimal.ZERO;
+        }
+        
+        // Cálculo de mora diaria = (monto * tasa_moratoria) / (100 * 365)
+        BigDecimal moraDiaria = prestamo.getMonto()
+                .multiply(prestamo.getInteresMoratorio())
+                .divide(BigDecimal.valueOf(365 * 100), 10, RoundingMode.HALF_UP);
+                
+        // Mora total = mora_diaria * días de mora
+        return moraDiaria.multiply(BigDecimal.valueOf(diasMora))
+                .setScale(2, RoundingMode.HALF_UP);
+    }
+    
+    private BigDecimal calcularTotalPagado(Prestamo prestamo) {
+        // Suma de todos los pagos realizados
+        return prestamo.getPagos().stream()
+                .map(Pago::getMonto)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }
