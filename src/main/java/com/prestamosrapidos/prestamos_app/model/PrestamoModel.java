@@ -6,27 +6,22 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.List;
 
-@Builder
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class PrestamoModel {
-
     private Long id;
     private BigDecimal monto;
     private BigDecimal interes;
     private BigDecimal interesMoratorio;
-    private LocalDate fechaCreacion;
-    private LocalDate fechaVencimiento;
+    private BigDecimal deudaRestante;
+    private FechasModel fechas;
     private String estado;
     private Long clienteId;
-    private BigDecimal deudaRestante;
-    private int diasMora;
-    private BigDecimal moraAcumulada;
-    private LocalDate fechaUltimoCalculoMora;
+    private DesglosePagoModel desglosePago;
+    private PagoDiarioModel pagoDiario;
     private List<PagoModel> pagos;
-
 }

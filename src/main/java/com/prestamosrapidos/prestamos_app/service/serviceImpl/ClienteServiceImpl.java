@@ -4,11 +4,9 @@ import com.prestamosrapidos.prestamos_app.entity.Cliente;
 import com.prestamosrapidos.prestamos_app.entity.Cuenta;
 import com.prestamosrapidos.prestamos_app.entity.Pago;
 import com.prestamosrapidos.prestamos_app.entity.Prestamo;
+import com.prestamosrapidos.prestamos_app.model.FechasModel;
 import com.prestamosrapidos.prestamos_app.exception.ClienteNotFoundException;
-import com.prestamosrapidos.prestamos_app.model.ClienteModel;
-import com.prestamosrapidos.prestamos_app.model.CuentaModel;
-import com.prestamosrapidos.prestamos_app.model.PagoModel;
-import com.prestamosrapidos.prestamos_app.model.PrestamoModel;
+import com.prestamosrapidos.prestamos_app.model.*;
 import com.prestamosrapidos.prestamos_app.repository.ClienteRepository;
 import com.prestamosrapidos.prestamos_app.repository.CuentaRepository;
 import com.prestamosrapidos.prestamos_app.repository.PrestamoRepository;
@@ -174,22 +172,62 @@ public class ClienteServiceImpl implements ClienteService {
     }
 
     private PrestamoModel convertirAPrestamoModel(Prestamo prestamo) {
+        // Construir el objeto Fechas
+        FechasModel fechas = FechasModel.builder()
+                .creacion(LocalDate.from(prestamo.getFechaCreacion()))
+                .vencimiento(prestamo.getFechaVencimiento())
+                .diasMora(prestamo.getDiasMora())
+                .build();
+        
+        // Calcular el pago diario (monto * (1 + interes/100) / 30)
+        BigDecimal montoDiario = prestamo.getMonto()
+                .multiply(BigDecimal.ONE.add(prestamo.getInteres().divide(BigDecimal.valueOf(100))))
+                .divide(BigDecimal.valueOf(30), 2, RoundingMode.HALF_UP);
+        
+        // Crear el objeto PagoDiario
+        PagoDiarioModel pagoDiario = PagoDiarioModel.builder()
+                .moraDiaria(prestamo.getInteresMoratorio() != null ? 
+                        prestamo.getMonto().multiply(prestamo.getInteresMoratorio())
+                                .divide(BigDecimal.valueOf(100 * 30), 2, RoundingMode.HALF_UP) : 
+                        BigDecimal.ZERO)
+                .proximoVencimiento(prestamo.getFechaVencimiento() != null ? 
+                        prestamo.getFechaVencimiento() : 
+                        LocalDate.now().plusDays(30))
+                .build();
+        
+        // Crear el desglose de pago
+        BigDecimal interesOrdinario = prestamo.getMonto()
+                .multiply(prestamo.getInteres())
+                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+                
+        BigDecimal moraAcumulada = prestamo.getMoraAcumulada() != null ? 
+                prestamo.getMoraAcumulada() : 
+                BigDecimal.ZERO;
+                
+        BigDecimal total = prestamo.getMonto()
+                .add(interesOrdinario)
+                .add(moraAcumulada);
+        
+        DesglosePagoModel desglosePago = DesglosePagoModel.builder()
+                .capital(prestamo.getMonto())
+                .interesOrdinario(interesOrdinario)
+                .moraAcumulada(moraAcumulada)
+                .totalDeuda(total)
+                .build();
+                
         return PrestamoModel.builder()
                 .id(prestamo.getId())
                 .monto(prestamo.getMonto())
                 .interes(prestamo.getInteres())
                 .interesMoratorio(prestamo.getInteresMoratorio())
-                .fechaCreacion(LocalDate.from(prestamo.getFechaCreacion()))
-                .fechaVencimiento(prestamo.getFechaVencimiento())
+                .fechas(fechas)
                 .estado(String.valueOf(prestamo.getEstado()))
                 .clienteId(prestamo.getCliente().getId())
-                .deudaRestante(prestamo.getDeudaRestante())
-                .diasMora(prestamo.getDiasMora())
-                .moraAcumulada(prestamo.getMoraAcumulada())
-                .fechaUltimoCalculoMora(prestamo.getFechaUltimoCalculoMora())
                 .pagos(prestamo.getPagos() != null
                         ? prestamo.getPagos().stream().map(this::convertirPagoAModelo).collect(Collectors.toList())
                         : new ArrayList<>())
+                .pagoDiario(pagoDiario)
+                .desglosePago(desglosePago)
                 .build();
     }
 

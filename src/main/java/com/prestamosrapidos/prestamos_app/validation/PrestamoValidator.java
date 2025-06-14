@@ -1,6 +1,7 @@
 package com.prestamosrapidos.prestamos_app.validation;
 
 import com.prestamosrapidos.prestamos_app.entity.enums.EstadoPrestamo;
+import com.prestamosrapidos.prestamos_app.model.FechasModel;
 import com.prestamosrapidos.prestamos_app.model.PagoModel;
 import com.prestamosrapidos.prestamos_app.model.PrestamoModel;
 
@@ -18,14 +19,37 @@ public class PrestamoValidator {
      */
     public static void validarPrestamoModel(PrestamoModel prestamoModel) {
         if (prestamoModel == null) {
-            throw new IllegalArgumentException("El modelo del préstamo no puede ser nulo.");
+            throw new IllegalArgumentException("El modelo de préstamo no puede ser nulo.");
         }
 
         validarMonto(prestamoModel.getMonto());
         validarInteres(prestamoModel.getInteres());
-        validarEstado(prestamoModel.getEstado());
+        
+        // Si el estado está presente, validarlo. Si no, establecerlo como APROBADO por defecto
+        if (prestamoModel.getEstado() != null && !prestamoModel.getEstado().trim().isEmpty()) {
+            validarEstado(prestamoModel.getEstado());
+        } else {
+            prestamoModel.setEstado(EstadoPrestamo.APROBADO.toString());
+        }
+        
         validarClienteId(prestamoModel.getClienteId());
-        validarFechas(prestamoModel.getFechaCreacion(), prestamoModel.getFechaVencimiento());
+        
+        // Inicializar objeto fechas si es nulo
+        if (prestamoModel.getFechas() == null) {
+            prestamoModel.setFechas(new FechasModel());
+        }
+        
+        // Establecer fecha de creación por defecto si no está presente
+        if (prestamoModel.getFechas().getCreacion() == null) {
+            prestamoModel.getFechas().setCreacion(LocalDate.now());
+        }
+        
+        // Validar las fechas
+        validarFechas(
+            prestamoModel.getFechas().getCreacion(),
+            prestamoModel.getFechas().getVencimiento()
+        );
+        
         validarDeudaRestante(prestamoModel);
         validarCalculos(prestamoModel);
     }
@@ -101,17 +125,27 @@ public class PrestamoValidator {
         }
     }
 
-    private static void validarFechas(LocalDate fechaCreacion, LocalDate fechaVencimiento) {
-        if (fechaVencimiento == null) {
-            throw new IllegalArgumentException("La fecha de vencimiento es obligatoria.");
+    public static void validarFechas(LocalDate fechaCreacion, LocalDate fechaVencimiento) {
+        // Si no hay fechas, no hay nada que validar
+        if (fechaCreacion == null && fechaVencimiento == null) {
+            return;
         }
-
-        if (fechaCreacion != null && fechaVencimiento.isBefore(fechaCreacion)) {
-            throw new IllegalArgumentException("La fecha de vencimiento no puede ser anterior a la fecha de creación.");
-        }
-
+        
+        // Validar que la fecha de creación no sea futura
         if (fechaCreacion != null && fechaCreacion.isAfter(LocalDate.now())) {
-            throw new IllegalArgumentException("La fecha de creación no puede ser una fecha futura.");
+            throw new IllegalArgumentException("La fecha de creación no puede ser futura");
+        }
+        
+        // Si solo se proporciona una de las dos fechas, no podemos hacer la comparación
+        if (fechaCreacion == null || fechaVencimiento == null) {
+            return;
+        }
+        
+        // Validar que la fecha de vencimiento sea estrictamente posterior a la de creación
+        if (fechaVencimiento.isBefore(fechaCreacion) || fechaVencimiento.isEqual(fechaCreacion)) {
+            throw new IllegalArgumentException(String.format(
+                "La fecha de vencimiento (%s) debe ser posterior a la fecha de creación (%s)", 
+                fechaVencimiento, fechaCreacion));
         }
     }
 

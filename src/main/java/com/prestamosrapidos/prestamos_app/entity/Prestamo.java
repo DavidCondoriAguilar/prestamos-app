@@ -66,7 +66,7 @@ public class Prestamo {
     @Column(name = "fecha_creacion", nullable = false, updatable = false)
     private LocalDateTime fechaCreacion;
 
-    @Column(name = "fecha_vencimiento")
+    @Column(name = "fecha_vencimiento", nullable = false)
     private LocalDate fechaVencimiento;
 
     @Enumerated(EnumType.STRING)
@@ -98,7 +98,35 @@ public class Prestamo {
     private LocalDate fechaUltimaMora;
     
     @Column(name = "dias_mora", nullable = false)
-    private int diasMora = 0;
+    private Integer diasMora = 0;
+    
+    protected void validarFechasYCalcularMora() {
+        if (fechaCreacion == null || fechaVencimiento == null) {
+            return; // No se puede validar si falta alguna fecha
+        }
+
+        // Convertir ambas fechas a LocalDate para comparación consistente
+        LocalDate fechaCreacionLocalDate = fechaCreacion.toLocalDate();
+        LocalDate hoy = LocalDate.now();
+        
+        // Validar que la fecha de vencimiento no sea anterior a la de creación
+        if (fechaVencimiento.isBefore(fechaCreacionLocalDate)) {
+            throw new IllegalStateException("La fecha de vencimiento (" + fechaVencimiento + ") no puede ser anterior a la fecha de creación (" + fechaCreacionLocalDate + ")");
+        }
+        
+        // Si la fecha de vencimiento es hoy o en el futuro, no hay mora
+        if (!hoy.isAfter(fechaVencimiento)) {
+            this.diasMora = 0;
+            if (this.estado == EstadoPrestamo.EN_MORA) {
+                this.estado = EstadoPrestamo.APROBADO;
+            }
+            return;
+        }
+        
+        // Si llegamos aquí, el préstamo está vencido
+        this.diasMora = (int) java.time.temporal.ChronoUnit.DAYS.between(fechaVencimiento, hoy);
+        this.estado = EstadoPrestamo.EN_MORA;
+    }
     
     @Column(name = "mora_acumulada", nullable = false, precision = 19, scale = 2)
     @Builder.Default
@@ -132,11 +160,13 @@ public class Prestamo {
         if (fechaCreacion == null) {
             fechaCreacion = LocalDateTime.now();
         }
+        validarFechasYCalcularMora();
     }
 
     @PreUpdate
     public void preUpdate() {
         this.fechaUltimoInteres = LocalDate.now();
+        validarFechasYCalcularMora();
     }
 
     public void addPago(Pago pago) {
