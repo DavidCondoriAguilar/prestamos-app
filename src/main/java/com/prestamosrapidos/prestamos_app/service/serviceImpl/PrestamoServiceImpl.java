@@ -1,10 +1,12 @@
 package com.prestamosrapidos.prestamos_app.service.serviceImpl;
 
 import com.prestamosrapidos.prestamos_app.entity.Cliente;
+import com.prestamosrapidos.prestamos_app.entity.Cuenta;
 import com.prestamosrapidos.prestamos_app.entity.Pago;
 import com.prestamosrapidos.prestamos_app.entity.Prestamo;
 import com.prestamosrapidos.prestamos_app.entity.enums.EstadoPrestamo;
 import com.prestamosrapidos.prestamos_app.exception.RecursoNoEncontradoException;
+import com.prestamosrapidos.prestamos_app.exception.SaldoInsuficienteException;
 import com.prestamosrapidos.prestamos_app.model.*;
 import com.prestamosrapidos.prestamos_app.repository.ClienteRepository;
 import com.prestamosrapidos.prestamos_app.repository.PrestamoRepository;
@@ -26,6 +28,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PrestamoServiceImpl implements PrestamoService {
@@ -92,6 +97,12 @@ public class PrestamoServiceImpl implements PrestamoService {
         if (fechaVencimiento.isBefore(fechaCreacion)) {
             throw new IllegalArgumentException("La fecha de vencimiento no puede ser anterior a la fecha de creación");
         }
+        
+        // Validar saldo suficiente
+        validarSaldoSuficiente(cliente, prestamoModel.getMonto());
+        
+        // Actualizar saldo de la cuenta
+        actualizarSaldoCuenta(cliente, prestamoModel.getMonto().negate());
         
         // Guardar el préstamo
         Prestamo prestamoGuardado = prestamoRepository.save(prestamo);
@@ -484,6 +495,38 @@ public class PrestamoServiceImpl implements PrestamoService {
         });
     }
 
+    private void validarSaldoSuficiente(Cliente cliente, BigDecimal montoPrestamo) {
+        if (cliente.getCuentas() == null || cliente.getCuentas().isEmpty()) {
+            throw new IllegalStateException("El cliente no tiene cuentas asociadas");
+        }
+        
+        // Tomamos la primera cuenta del cliente
+        Cuenta cuenta = cliente.getCuentas().get(0);
+        BigDecimal saldoActual = cuenta.getSaldo() != null ? cuenta.getSaldo() : BigDecimal.ZERO;
+        
+        if (saldoActual.compareTo(montoPrestamo) < 0) {
+            throw new SaldoInsuficienteException(
+                String.format("Saldo insuficiente. Saldo actual: %s, Monto solicitado: %s", 
+                    saldoActual, montoPrestamo)
+            );
+        }
+    }
+    
+    private void actualizarSaldoCuenta(Cliente cliente, BigDecimal monto) {
+        if (cliente.getCuentas() == null || cliente.getCuentas().isEmpty()) {
+            log.warn("No se pudo actualizar el saldo: el cliente no tiene cuentas asociadas");
+            return;
+        }
+        
+        // Tomamos la primera cuenta del cliente
+        Cuenta cuenta = cliente.getCuentas().get(0);
+        BigDecimal saldoActual = cuenta.getSaldo() != null ? cuenta.getSaldo() : BigDecimal.ZERO;
+        BigDecimal nuevoSaldo = saldoActual.add(monto);
+        
+        cuenta.setSaldo(nuevoSaldo);
+        log.info("Actualizado saldo de la cuenta {}: {}", cuenta.getNumeroCuenta(), nuevoSaldo);
+    }
+    
     private PrestamoModel convertirEntidadAModelo(Prestamo prestamo) {
         // Asegurarse de que los valores no sean nulos
         BigDecimal interesMoratorio = prestamo.getInteresMoratorio() != null
