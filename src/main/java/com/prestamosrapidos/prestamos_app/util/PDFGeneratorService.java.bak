@@ -5,7 +5,6 @@ import com.itextpdf.text.pdf.*;
 import com.prestamosrapidos.prestamos_app.entity.Cliente;
 import com.prestamosrapidos.prestamos_app.entity.Pago;
 import com.prestamosrapidos.prestamos_app.entity.Prestamo;
-import com.prestamosrapidos.prestamos_app.entity.enums.EstadoPrestamo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -14,20 +13,27 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.URL;
 import java.text.DecimalFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import static PDFGeneratorService.BORDER_COLOR;
 
 @Service
 @Slf4j
 public class PDFGeneratorService {
 
     // Colors
-    protected static final BaseColor PRIMARY_COLOR = new BaseColor(51, 122, 183);
-    protected static final BaseColor SECONDARY_COLOR = new BaseColor(92, 184, 92);
-    protected static final BaseColor LIGHT_GRAY = new BaseColor(248, 249, 250);
-    protected static final BaseColor BORDER_COLOR = new BaseColor(206, 212, 218);
-    protected static final BaseColor TEXT_COLOR = new BaseColor(33, 37, 41);
+    private static final BaseColor PRIMARY_COLOR = new BaseColor(51, 122, 183);
+    private static final BaseColor SECONDARY_COLOR = new BaseColor(92, 184, 92);
+    private static final BaseColor LIGHT_GRAY = new BaseColor(248, 249, 250);
+    private static final BaseColor BORDER_COLOR = new BaseColor(206, 212, 218);
+    private static final BaseColor TEXT_COLOR = new BaseColor(33, 37, 41);
     
     // Formatting
     private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#,##0.00");
@@ -44,8 +50,8 @@ public class PDFGeneratorService {
     
     // Company Info
     private static final String COMPANY_NAME = "Préstamos Rápidos S.A.";
-    private static final String COMPANY_ADDRESS = "Av. Principal 777, Lima, Perú";
-    private static final String COMPANY_PHONE = "+51 928 193 119";
+    private static final String COMPANY_ADDRESS = "Av. Principal 123, Lima, Perú";
+    private static final String COMPANY_PHONE = "+51 1 987654321";
     private static final String COMPANY_EMAIL = "info@prestamosrapidos.com";
 
     public ByteArrayInputStream generateClientReport(Cliente cliente) {
@@ -58,7 +64,7 @@ public class PDFGeneratorService {
             
             // Create PDF writer with page events for header/footer
             PdfWriter writer = PdfWriter.getInstance(document, out);
-            writer.setPageEvent(new PdfPageEventHandler());
+            writer.setPageEvent(new PdfPageEventHelper());
             
             document.open();
             
@@ -195,7 +201,6 @@ public class PDFGeneratorService {
         addInfoRow(table, "Nombre:", cliente.getNombre());
         addInfoRow(table, "Correo Electrónico:", cliente.getCorreo());
         addInfoRow(table, "Número de Cuentas:", String.valueOf(safeSize(cliente.getCuentas())));
-
         addInfoRow(table, "Número de Préstamos:", String.valueOf(safeSize(cliente.getPrestamos())));
         
         // Add the table to document
@@ -286,21 +291,12 @@ public class PDFGeneratorService {
     }
     
     private void addSectionTitle(Document document, String title) throws DocumentException {
-        // Create a table with a single cell for the section title with bottom border
-        PdfPTable table = new PdfPTable(1);
-        table.setWidthPercentage(100);
-        table.setSpacingBefore(20);
-        table.setSpacingAfter(10);
-        
-        // Add title cell with bottom border
-        PdfPCell cell = new PdfPCell(new Phrase(title, subtitleFont));
-        cell.setBorder(Rectangle.NO_BORDER);
-        cell.setBorderWidthBottom(1f);
-        cell.setBorderColorBottom(PRIMARY_COLOR);
-        cell.setPaddingBottom(5);
-        table.addCell(cell);
-        
-        document.add(table);
+        Paragraph sectionTitle = new Paragraph(title, subtitleFont);
+        sectionTitle.setSpacingBefore(20);
+        sectionTitle.setSpacingAfter(10);
+        sectionTitle.setBorderBottom(new SolidBorder(PRIMARY_COLOR, 1, 1));
+        sectionTitle.setPaddingBottom(5);
+        document.add(sectionTitle);
     }
 
     private void addAccountsTable(Document document, Cliente cliente) throws DocumentException {
@@ -310,7 +306,7 @@ public class PDFGeneratorService {
         table.setSpacingAfter(20);
         
         // Table header
-        addTableHeader(table, new String[]{"Número de Cuenta", "Saldo Actual", "Cliente ID"});
+        addTableHeader(table, "Número de Cuenta", "Saldo Actual", "Cliente ID");
         
         // Table rows
         cliente.getCuentas().forEach(cuenta -> {
@@ -333,8 +329,8 @@ public class PDFGeneratorService {
         table.setWidths(columnWidths);
         
         // Table header
-        addTableHeader(table, new String[]{"ID Préstamo", "Monto", "Interés", "Fecha Vencimiento", 
-                      "Estado", "Deuda Restante", "Mora"});
+        addTableHeader(table, "ID Préstamo", "Monto", "Interés", "Fecha Vencimiento", 
+                      "Estado", "Deuda Restante", "Mora");
         
         // Table rows
         for (Prestamo prestamo : cliente.getPrestamos()) {
@@ -357,9 +353,9 @@ public class PDFGeneratorService {
                 
             // Status with color coding
             PdfPCell statusCell = createCell(prestamo.getEstado().name(), Element.ALIGN_CENTER);
-            if (prestamo.getEstado() == EstadoPrestamo.EN_MORA) {
+            if (prestamo.getEstado() == Prestamo.EstadoPrestamo.EN_MORA) {
                 statusCell.setBackgroundColor(new BaseColor(248, 215, 218)); // Light red for overdue
-            } else if (prestamo.getEstado() == EstadoPrestamo.PAGADO) {
+            } else if (prestamo.getEstado() == Prestamo.EstadoPrestamo.PAGADO) {
                 statusCell.setBackgroundColor(new BaseColor(212, 237, 218)); // Light green for paid
             } else {
                 statusCell.setBackgroundColor(LIGHT_GRAY);
@@ -395,7 +391,7 @@ public class PDFGeneratorService {
         table.setSpacingAfter(20);
         
         // Table header
-        addTableHeader(table, new String[]{"ID Préstamo", "Monto del Pago", "Fecha de Pago", "Comentario"});
+        addTableHeader(table, "ID Préstamo", "Monto del Pago", "Fecha de Pago", "Comentario");
         
         // Table rows
         for (Prestamo prestamo : cliente.getPrestamos()) {
@@ -493,40 +489,7 @@ public class PDFGeneratorService {
         table.addCell(valueCell);
     }
 
-    /**
-     * Safely gets the size of a collection, returning 0 if the collection is null
-     */
-    private int safeSize(java.util.Collection<?> collection) {
-        return collection == null ? 0 : collection.size();
-    }
-
-    /**
-     * Helper method to create a table header row
-     */
-    private void addTableHeader(PdfPTable table, String[] headers) {
-        for (String header : headers) {
-            PdfPCell headerCell = new PdfPCell(new Phrase(header, headerFont));
-            headerCell.setBackgroundColor(PRIMARY_COLOR);
-            headerCell.setHorizontalAlignment(Element.ALIGN_CENTER);
-            headerCell.setPadding(8);
-            table.addCell(headerCell);
-        }
-    }
-    
-    /**
-     * Helper method to create a styled cell
-     */
-    private PdfPCell createCell(String content, int alignment) {
-        PdfPCell cell = new PdfPCell(new Phrase(content, normalFont));
-        cell.setPadding(6);
-        cell.setHorizontalAlignment(alignment);
-        cell.setBorder(Rectangle.BOX);
-        cell.setBorderWidth(0.5f);
-        cell.setBorderColor(BORDER_COLOR);
-        return cell;
-    }
-    
-    private void addDocumentFooter(Document document) throws DocumentException {
+private void addDocumentFooter(Document document) throws DocumentException {
     // Add some space
     document.add(Chunk.NEWLINE);
     
@@ -573,74 +536,32 @@ private void addWatermark(PdfWriter writer) {
 /**
  * Helper class for handling page events (header, footer, etc.)
  */
-private static class PdfPageEventHandler extends PdfPageEventHelper {
-    private static final float FOOTER_FONT_SIZE = 8f;
-    private static final float FOOTER_MARGIN_BOTTOM = 20f;
-    private static final float LINE_MARGIN_TOP = 15f;
-    private static final float LINE_WIDTH = 0.5f;
-    
-    private final Font footerFont;
-    private final BaseColor lineColor;
-    
-    public PdfPageEventHandler() {
-        this.footerFont = new Font(Font.FontFamily.HELVETICA, FOOTER_FONT_SIZE, 
-                                Font.NORMAL, BaseColor.DARK_GRAY);
-        this.lineColor = BaseColor.LIGHT_GRAY;
-    }
-    
+private class PdfPageEventHelper extends PdfPageEventHelper {
     @Override
     public void onEndPage(PdfWriter writer, Document document) {
-        if (writer == null || document == null) {
-            log.warn("Writer or Document is null in onEndPage");
-            return;
-        }
-
         try {
-            addPageNumber(writer, document);
-            addFooterLine(writer, document);
-        } catch (Exception e) {
-            log.error("Error adding footer to page {}", writer.getPageNumber(), e);
-        }
-    }
-    
-    private void addPageNumber(PdfWriter writer, Document document) throws DocumentException {
-        PdfContentByte cb = writer.getDirectContent();
-        String pageText = String.format("Página %d de", writer.getPageNumber());
-        Phrase footer = new Phrase(pageText, footerFont);
-        
-        float x = (document.right() - document.left()) / 2 + document.leftMargin();
-        float y = document.bottom() - FOOTER_MARGIN_BOTTOM;
-        
-        ColumnText.showTextAligned(
-            cb, Element.ALIGN_CENTER, footer, x, y, 0
-        );
-    }
-    
-    private void addFooterLine(PdfWriter writer, Document document) {
-        PdfContentByte cb = writer.getDirectContent();
-        cb.saveState();
-        try {
-            cb.setLineWidth(LINE_WIDTH);
-            cb.setColorStroke(lineColor);
-            float y = document.bottom() - LINE_MARGIN_TOP;
-            cb.moveTo(document.left(), y);
-            cb.lineTo(document.right(), y);
+            // Add page number to footer
+            PdfContentByte cb = writer.getDirectContent();
+            Phrase footer = new Phrase(
+                String.format("Página %d", writer.getPageNumber()),
+                new Font(Font.FontFamily.HELVETICA, 8, Font.NORMAL, BaseColor.DARK_GRAY)
+            );
+            
+            ColumnText.showTextAligned(
+                cb, Element.ALIGN_CENTER, footer,
+                (document.right() - document.left()) / 2 + document.leftMargin(),
+                document.bottom() - 20, 0
+            );
+            
+            // Add a horizontal line above the footer
+            cb.setLineWidth(0.5f);
+            cb.setColorStroke(BaseColor.LIGHT_GRAY);
+            cb.moveTo(document.left(), document.bottom() - 15);
+            cb.lineTo(document.right(), document.bottom() - 15);
             cb.stroke();
-        } finally {
-            cb.restoreState();
-        }
-    }
-    
-    @Override
-    public void onCloseDocument(PdfWriter writer, Document document) {
-        try {
-            // Clean up resources if needed
-            if (writer != null) {
-                writer.flush();
-            }
+            
         } catch (Exception e) {
-            log.error("Error closing document", e);
+            log.error("Error adding footer", e);
         }
     }
-}
 }

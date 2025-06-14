@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -69,12 +70,12 @@ public class PrestamoController {
     }
 
     @GetMapping("/{id}/interes")
-    public ResponseEntity<Double> calcularInteresTotal(@PathVariable @Min(1) Long id) {
+    public ResponseEntity<BigDecimal> calcularInteresTotal(@PathVariable @Min(1) Long id) {
         return ResponseEntity.ok(prestamoService.calcularInteresTotal(id));
     }
 
     @GetMapping("/{id}/monto-restante")
-    public ResponseEntity<Double> calcularMontoRestante(@PathVariable Long id) {
+    public ResponseEntity<BigDecimal> calcularMontoRestante(@PathVariable Long id) {
         return ResponseEntity.ok(prestamoService.calcularMontoRestante(id));
     }
 }

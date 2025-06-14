@@ -2,6 +2,7 @@ package com.prestamosrapidos.prestamos_app.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.math.BigDecimal;
 
 @Entity
 @Table(name = "cuentas")
@@ -20,10 +21,13 @@ public class Cuenta {
     @Column(nullable = false, length = 50, unique = true)
     private String numeroCuenta;
 
-    @ManyToOne(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "cliente_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "cliente_id", referencedColumnName = "id", nullable = false, 
+               foreignKey = @ForeignKey(name = "fk_cuenta_cliente"))
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Cliente cliente;
 
-    @Column(nullable = false)
-    private Double saldo;
+    @Column(nullable = false, precision = 19, scale = 2)
+    private BigDecimal saldo;
 }

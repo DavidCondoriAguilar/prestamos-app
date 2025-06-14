@@ -12,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+
 @Service
 @RequiredArgsConstructor
 public class CuentaServiceImpl implements CuentaService {
@@ -31,8 +33,8 @@ public class CuentaServiceImpl implements CuentaService {
             throw new CuentaNotFoundException("El número de cuenta ya está en uso: " + cuentaModel.getNumeroCuenta());
         }
 
-        if (cuentaModel.getSaldo() < 1.0) {
-            throw new IllegalArgumentException("El saldo debe ser mayor o igual a 1.0");
+        if (cuentaModel.getSaldo().compareTo(new BigDecimal("1.00")) < 0) {
+            throw new IllegalArgumentException("El saldo debe ser mayor o igual a 1.00");
         }
 
         if (!cuentaModel.getNumeroCuenta().matches("\\d{10}")) {

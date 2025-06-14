@@ -34,6 +34,7 @@
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
+			<version>42.7.4</version>
 			<scope>runtime</scope>
 		</dependency>
         <dependency>
@@ -42,11 +43,13 @@
             <version>1.18.30</version>
             <scope>provided</scope>
         </dependency>
+        <!-- Temporarily removed to resolve build issues
         <dependency>
             <groupId>io.github.cdimascio</groupId>
             <artifactId>dotenv-spring-boot-starter</artifactId>
             <version>3.1.0</version>
         </dependency>
+        -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
@@ -97,6 +100,18 @@
 			<artifactId>mockito-core</artifactId>
 			<version>5.12.0</version>
 			<scope>test</scope>
+		</dependency>
+
+		<!-- Flyway para migraciones de base de datos -->
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-core</artifactId>
+			<version>10.20.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-database-postgresql</artifactId>
+			<version>10.20.1</version>
 		</dependency>
 
 		<!-- Mockito para pruebas con Spring Boot (MockBean) -->

@@ -23,10 +23,10 @@ public class PrestamoModel {
     private LocalDate fechaVencimiento;
     private String estado;
     private Long clienteId;
-    private double deudaRestante;
-/*
-    private BigDecimal saldoMoratorio;
-*/
+    private BigDecimal deudaRestante;
+    private int diasMora;
+    private BigDecimal moraAcumulada;
+    private LocalDate fechaUltimoCalculoMora;
     private List<PagoModel> pagos;
 
 }

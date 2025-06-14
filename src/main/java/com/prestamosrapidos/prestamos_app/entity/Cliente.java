@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@Table(name = "clientes")
 @Data
 @Builder
 @NoArgsConstructor
@@ -29,10 +30,16 @@ public class Cliente {
     private String correo;
 
     @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<Cuenta> cuentas;
+    @Builder.Default
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private List<Cuenta> cuentas = new ArrayList<>();
 
     @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<Prestamo> prestamos;
+    @Builder.Default
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private List<Prestamo> prestamos = new ArrayList<>();
 
     // Método para agregar una cuenta a la lista de cuentas
     public void addCuenta(Cuenta cuenta) {

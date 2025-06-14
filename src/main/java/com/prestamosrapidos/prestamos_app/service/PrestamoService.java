@@ -5,6 +5,7 @@ import com.prestamosrapidos.prestamos_app.model.EstadoModel;
 import com.prestamosrapidos.prestamos_app.model.PrestamoModel;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public interface PrestamoService {
@@ -15,8 +16,8 @@ public interface PrestamoService {
     List<PrestamoModel> obtenerPrestamosPorCliente(Long clienteId);
     List<PrestamoModel> obtenerPrestamosPorEstado(String estado);
     void eliminarPrestamo(Long id);
-    Double calcularInteresTotal(Long prestamoId);
-    Double calcularMontoRestante(Long prestamoId);
+    BigDecimal calcularInteresTotal(Long prestamoId);
+    BigDecimal calcularMontoRestante(Long prestamoId);
     PrestamoModel actualizarEstado(Long id, EstadoModel nuevoEstado);
     @Transactional
     void verificarYActualizarEstado(Prestamo prestamo);

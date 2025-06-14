@@ -71,11 +71,14 @@ public class ClienteServiceImpl implements ClienteService {
                         + numeroCuenta);
             }
 
-            // Convertir la cuenta y asociarla al cliente
+            // First save the cliente to get an ID
+            cliente = clienteRepository.save(cliente);
+            
+            // Then create and save the cuenta with the persisted cliente
             Cuenta cuenta = convertirACuenta(clienteModel.getCuenta(), cliente);
-
             cuenta = cuentaRepository.save(cuenta);
-
+            
+            // Add the saved cuenta to the cliente's list of cuentas
             cliente.addCuenta(cuenta);
         }
 
@@ -149,7 +152,7 @@ public class ClienteServiceImpl implements ClienteService {
                 .prestamos(cliente.getPrestamos() != null
                         ? cliente.getPrestamos().stream()
                         .map(prestamo -> {
-                            double deudaRestante = prestamoService.calcularMontoRestante(prestamo.getId());
+                            BigDecimal deudaRestante = prestamoService.calcularMontoRestante(prestamo.getId());
                             PrestamoModel prestamoModel = convertirAPrestamoModel(prestamo);
                             prestamoModel.setDeudaRestante(deudaRestante);
                             return prestamoModel;
@@ -180,6 +183,10 @@ public class ClienteServiceImpl implements ClienteService {
                 .fechaVencimiento(prestamo.getFechaVencimiento())
                 .estado(String.valueOf(prestamo.getEstado()))
                 .clienteId(prestamo.getCliente().getId())
+                .deudaRestante(prestamo.getDeudaRestante())
+                .diasMora(prestamo.getDiasMora())
+                .moraAcumulada(prestamo.getMoraAcumulada())
+                .fechaUltimoCalculoMora(prestamo.getFechaUltimoCalculoMora())
                 .pagos(prestamo.getPagos() != null
                         ? prestamo.getPagos().stream().map(this::convertirPagoAModelo).collect(Collectors.toList())
                         : new ArrayList<>())
@@ -201,22 +208,22 @@ public class ClienteServiceImpl implements ClienteService {
         }
 
         // Validar que el saldo sea positivo
-        Double saldoDouble = cuentaModel.getSaldo();
-        log.debug("Saldo recibido: {}", saldoDouble);
+        BigDecimal saldo = cuentaModel.getSaldo();
+        log.debug("Saldo recibido: {}", saldo);
         
-        if (saldoDouble == null) {
+        if (saldo == null) {
             log.warn("El saldo es nulo");
             throw new IllegalArgumentException("El saldo inicial debe ser mayor a cero");
         }
         
-        if (saldoDouble <= 0) {
-            log.warn("El saldo es menor o igual a cero: {}", saldoDouble);
+        if (saldo.compareTo(BigDecimal.ZERO) <= 0) {
+            log.warn("El saldo es menor o igual a cero: {}", saldo);
             throw new IllegalArgumentException("El saldo inicial debe ser mayor a cero");
         }
         
-        // Convertir a BigDecimal con 2 decimales
-        BigDecimal saldo = BigDecimal.valueOf(saldoDouble).setScale(2, RoundingMode.HALF_UP);
-        log.debug("Saldo convertido a BigDecimal: {}", saldo);
+        // Asegurar que el saldo tenga exactamente 2 decimales
+        saldo = saldo.setScale(2, RoundingMode.HALF_UP);
+        log.debug("Saldo validado: {}", saldo);
         
         // Verificar que el saldo no sea demasiado grande
         if (saldo.compareTo(new BigDecimal("999999999999.99")) > 0) {

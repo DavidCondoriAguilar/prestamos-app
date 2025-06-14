@@ -24,6 +24,7 @@ import java.time.chrono.ChronoLocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -99,6 +100,7 @@ public class PrestamoServiceImpl implements PrestamoService {
     }
 
     @Override
+    @Transactional
     public PrestamoModel actualizarEstado(Long id, EstadoModel nuevoEstado) {
         Prestamo prestamo = prestamoRepository.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Préstamo no encontrado"));
@@ -122,35 +124,52 @@ public class PrestamoServiceImpl implements PrestamoService {
         }
 
         prestamo.setEstado(nuevoEstadoEnum);
-        Prestamo updatedPrestamo = prestamoRepository.save(prestamo);
-        return convertirEntidadAModelo(updatedPrestamo);
-    }
-
-    @Override
-    public PrestamoModel obtenerPrestamoPorId(Long id) {
-        Prestamo prestamo = prestamoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Préstamo no encontrado"));
+        prestamo = prestamoRepository.save(prestamo);
         return convertirEntidadAModelo(prestamo);
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public PrestamoModel obtenerPrestamoPorId(Long id) {
+        Prestamo prestamo = prestamoRepository.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Préstamo no encontrado con ID: " + id));
+        
+        // Verificar y actualizar mora si es necesario
+        verificarYActualizarMora(prestamo);
+        
+        return convertirEntidadAModelo(prestamo);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
     public List<PrestamoModel> obtenerTodosLosPrestamos() {
-        return prestamoRepository.findAll().stream()
+        List<Prestamo> prestamos = prestamoRepository.findAll();
+        // Verificar y actualizar mora para cada préstamo
+        prestamos.forEach(this::verificarYActualizarMora);
+        return prestamos.stream()
                 .map(this::convertirEntidadAModelo)
                 .collect(Collectors.toList());
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<PrestamoModel> obtenerPrestamosPorCliente(Long clienteId) {
-        return prestamoRepository.findByClienteId(clienteId).stream()
+        List<Prestamo> prestamos = prestamoRepository.findByClienteId(clienteId);
+        // Verificar y actualizar mora para cada préstamo
+        prestamos.forEach(this::verificarYActualizarMora);
+        return prestamos.stream()
                 .map(this::convertirEntidadAModelo)
                 .collect(Collectors.toList());
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<PrestamoModel> obtenerPrestamosPorEstado(String estado) {
         EstadoPrestamo estadoEnum = EstadoPrestamo.fromString(estado);
-        return prestamoRepository.findByEstado(String.valueOf(estadoEnum)).stream()
+        List<Prestamo> prestamos = prestamoRepository.findByEstado(String.valueOf(estadoEnum));
+        // Verificar y actualizar mora para cada préstamo
+        prestamos.forEach(this::verificarYActualizarMora);
+        return prestamos.stream()
                 .map(this::convertirEntidadAModelo)
                 .collect(Collectors.toList());
     }
@@ -163,48 +182,55 @@ public class PrestamoServiceImpl implements PrestamoService {
     }
 
     @Override
-    public Double calcularInteresTotal(Long prestamoId) {
+    public BigDecimal calcularInteresTotal(Long prestamoId) {
         Prestamo prestamo = prestamoRepository.findById(prestamoId)
-                .orElseThrow(() -> new RuntimeException("Préstamo no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Préstamo no encontrado"));
 
         BigDecimal monto = prestamo.getMonto();
         BigDecimal interes = prestamo.getInteres();
 
-        BigDecimal interesTotal = monto.multiply(interes).divide(BigDecimal.valueOf(100));
-        BigDecimal total = monto.add(interesTotal);
-
-        return total.doubleValue();
+        // Calcular el interés total (monto * interés%)
+        BigDecimal interesTotal = monto.multiply(interes)
+                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+                
+        // Sumar el monto original + intereses
+        return monto.add(interesTotal).setScale(2, RoundingMode.HALF_UP);
     }
 
     @Override
-    public Double calcularMontoRestante(Long prestamoId) {
+    public BigDecimal calcularMontoRestante(Long prestamoId) {
         Prestamo prestamo = prestamoRepository.findById(prestamoId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Préstamo no encontrado"));
 
         // Calcular monto total inicial (monto + interés inicial)
         BigDecimal montoTotal = prestamo.getMonto()
                 .add(prestamo.getMonto().multiply(prestamo.getInteres())
-                        .divide(BigDecimal.valueOf(100)));
-
+                        .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP));
+                        
         // Sumar pagos realizados
         BigDecimal montoPagado = prestamo.getPagos().stream()
                 .map(Pago::getMonto)
+                .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // Saldo pendiente sin mora
+        // Calcular saldo pendiente
         BigDecimal saldoPendiente = montoTotal.subtract(montoPagado);
 
-        // Aplicar interés moratorio si está vencido y no se ha aplicado antes
+        // Verificar si se debe aplicar interés moratorio
         LocalDate hoy = LocalDate.now();
         boolean interesMoratorioAplicado = prestamo.getInteresMoratorioAplicado() != null
                 ? prestamo.getInteresMoratorioAplicado()
-                : false; // Manejar valores nulos
+                : false;
 
         if (prestamo.getFechaVencimiento() != null
                 && hoy.isAfter(prestamo.getFechaVencimiento())
                 && !interesMoratorioAplicado) {
-            BigDecimal interesMoratorio = saldoPendiente.multiply(prestamo.getInteresMoratorio())
-                    .divide(BigDecimal.valueOf(100));
+            // Calcular interés moratorio como 0.1% del monto original por día de mora
+            long diasMora = ChronoUnit.DAYS.between(prestamo.getFechaVencimiento(), hoy);
+            BigDecimal interesDiario = prestamo.getMonto()
+                    .multiply(BigDecimal.valueOf(0.001)); // 0.1% = 0.001
+            BigDecimal interesMoratorio = interesDiario.multiply(BigDecimal.valueOf(diasMora));
+                    
             saldoPendiente = saldoPendiente.add(interesMoratorio);
 
             // Actualizar estado del préstamo
@@ -212,8 +238,7 @@ public class PrestamoServiceImpl implements PrestamoService {
             prestamo.setFechaUltimoInteres(hoy);
             prestamoRepository.save(prestamo);
         }
-
-        return saldoPendiente.doubleValue();
+        return saldoPendiente.setScale(2, RoundingMode.HALF_UP);
     }
 
     @Transactional
@@ -222,8 +247,8 @@ public class PrestamoServiceImpl implements PrestamoService {
         LocalDate hoy = LocalDate.now();
 
         // Verificar si el préstamo está completamente pagado
-        double deudaRestante = calcularMontoRestante(prestamo.getId());
-        if (deudaRestante <= 0) {
+        BigDecimal deudaRestante = calcularMontoRestante(prestamo.getId());
+        if (deudaRestante.compareTo(BigDecimal.ZERO) <= 0) {
             if (!prestamo.getEstado().equals(EstadoPrestamo.PAGADO)) {
                 prestamo.setEstado(EstadoPrestamo.PAGADO);
                 prestamoRepository.save(prestamo);
@@ -246,6 +271,61 @@ public class PrestamoServiceImpl implements PrestamoService {
         }
     }
 
+    @Transactional
+    protected void verificarYActualizarMora(Prestamo prestamo) {
+        if (prestamo.getEstado() != EstadoPrestamo.PAGADO && 
+            prestamo.getFechaVencimiento() != null &&
+            prestamo.getFechaVencimiento().isBefore(LocalDate.now())) {
+            
+            // Si el préstamo está aprobado pero ya venció, actualizar a VENCIDO
+            if (prestamo.getEstado() == EstadoPrestamo.APROBADO) {
+                prestamo.setEstado(EstadoPrestamo.VENCIDO);
+                prestamo.setFechaUltimoCalculoMora(prestamo.getFechaVencimiento());
+            }
+            
+            // Si el préstamo está vencido o en mora, calcular la mora
+            if (prestamo.getEstado() == EstadoPrestamo.VENCIDO || 
+                prestamo.getEstado() == EstadoPrestamo.EN_MORA) {
+                
+                LocalDate hoy = LocalDate.now();
+                LocalDate fechaReferencia = prestamo.getFechaUltimoCalculoMora() != null ?
+                    prestamo.getFechaUltimoCalculoMora() : prestamo.getFechaVencimiento();
+                    
+                long diasMora = ChronoUnit.DAYS.between(fechaReferencia, hoy);
+                
+                if (diasMora > 0) {
+                    BigDecimal moraDiaria = calcularMoraDiaria(prestamo.getMonto(), 
+                        prestamo.getInteresMoratorio() != null ? 
+                            prestamo.getInteresMoratorio() : BigDecimal.TEN);
+                            
+                    BigDecimal moraTotal = moraDiaria.multiply(BigDecimal.valueOf(diasMora));
+                    
+                    // Actualizar valores del préstamo
+                    prestamo.setDiasMora(prestamo.getDiasMora() + (int)diasMora);
+                    
+                    BigDecimal nuevaMoraAcumulada = prestamo.getMoraAcumulada() != null ?
+                        prestamo.getMoraAcumulada().add(moraTotal) : moraTotal;
+                    prestamo.setMoraAcumulada(nuevaMoraAcumulada);
+                    
+                    BigDecimal deudaActual = prestamo.getDeudaRestante() != null ?
+                        prestamo.getDeudaRestante() : BigDecimal.ZERO;
+                    prestamo.setDeudaRestante(deudaActual.add(moraTotal));
+                    
+                    prestamo.setEstado(EstadoPrestamo.EN_MORA);
+                    prestamo.setFechaUltimoCalculoMora(hoy);
+                    
+                    // Guardar los cambios
+                    prestamoRepository.save(prestamo);
+                }
+            }
+        }
+    }
+    
+    private BigDecimal calcularMoraDiaria(BigDecimal monto, BigDecimal porcentajeMora) {
+        return monto.multiply(porcentajeMora)
+                   .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+    }
+    
     private BigDecimal calcularTotalPagado(Prestamo prestamo) {
         if (prestamo.getPagos() == null || prestamo.getPagos().isEmpty()) {
             return BigDecimal.ZERO;
@@ -292,7 +372,6 @@ public class PrestamoServiceImpl implements PrestamoService {
     }
 
     private PrestamoModel convertirEntidadAModelo(Prestamo prestamo) {
-
         BigDecimal interesMoratorio = prestamo.getInteresMoratorio() != null
                 ? prestamo.getInteresMoratorio()
                 : BigDecimal.valueOf(10.00);
@@ -302,12 +381,14 @@ public class PrestamoServiceImpl implements PrestamoService {
                 .monto(prestamo.getMonto())
                 .interes(prestamo.getInteres())
                 .interesMoratorio(interesMoratorio)
-                /*.saldoMoratorio(prestamo.getSaldoMoratorio())*/
                 .fechaCreacion(LocalDate.from(prestamo.getFechaCreacion()))
                 .fechaVencimiento(prestamo.getFechaVencimiento())
-                .estado(prestamo.getEstado().name())
+                .estado(String.valueOf(prestamo.getEstado()))
                 .clienteId(prestamo.getCliente().getId())
                 .deudaRestante(calcularMontoRestante(prestamo.getId()))
+                .diasMora(prestamo.getDiasMora())
+                .moraAcumulada(prestamo.getMoraAcumulada())
+                .fechaUltimoCalculoMora(prestamo.getFechaUltimoCalculoMora())
                 .pagos(prestamo.getPagos() != null
                         ? prestamo.getPagos().stream()
                         .map(pago -> PagoModel.builder()

@@ -196,6 +196,47 @@ List<PagoModel> pagosPendientes = pagos.stream()
 
 
 
+## Funcionalidad de Cálculo de Mora
+
+### Características Principales
+- Cálculo automático de mora diaria basado en el monto del préstamo
+- Soporte para días de gracia configurables
+- Actualización automática de estados (APROBADO → VENCIDO → EN_MORA)
+- Cálculo acumulativo de mora
+- Registro detallado de operaciones
+
+### Configuración
+```properties
+# Habilitar/deshabilitar cálculo de mora
+prestamo.mora.habilitada=true
+
+# Porcentaje de mora diario (ej: 0.1 = 0.1%)
+prestamo.mora.porcentaje-diario=0.1
+
+# Días de gracia antes de aplicar mora
+prestamo.mora.dias-gracia=0
+```
+
+### Flujo de Trabajo
+1. **Detección de Préstamos Vencidos**
+   - Verificación diaria de préstamos APROBADOS que superan su fecha de vencimiento
+   - Actualización automática a estado VENCIDO
+
+2. **Cálculo de Mora**
+   - Ejecución periódica (cada minuto en desarrollo)
+   - Cálculo de días de mora considerando días de gracia
+   - Acumulación de mora diaria
+   - Actualización de la deuda total
+
+3. **Actualización de Estados**
+   - Transición automática a estado EN_MORA al detectar mora
+   - Registro de fechas de cálculo para seguimiento
+
+### Monitoreo
+- Logs detallados para auditoría
+- Seguimiento de cambios de estado
+- Registro de cálculos realizados
+
 ## Mejoras Futuras
 
 ### Arquitectura y Diseño
@@ -324,7 +365,7 @@ List<PagoModel> pagosPendientes = pagos.stream()
 - Git 2.30.x+
 
 ### Requisitos de Desarrollo
-- IDE compatible con Java (IntelliJ IDEA, Eclipse)
+- IDE compatible con Java (IntelliJ IDEA)
 - Postman
 - Git
 
@@ -355,7 +396,52 @@ La aplicación estará disponible en `http://localhost:8080`
 
 ## Documentación de la API
 
-### Endpoints Principales
+### Generación de Reportes en PDF
+
+La aplicación incluye funcionalidad para generar reportes en formato PDF con información detallada de clientes, préstamos y pagos.
+
+### Características
+
+- Generación de informes detallados de clientes en formato PDF
+- Incluye información personal, cuentas, préstamos y pagos
+- Diseño profesional con estilos CSS
+- Numeración de páginas y pie de página personalizado
+- Marca de agua con el logo de la empresa
+- Tablas con formato profesional para mejor legibilidad
+
+### Uso
+
+```java
+// Ejemplo de generación de reporte de cliente
+@GetMapping("/clientes/{id}/reporte")
+public ResponseEntity<ByteArrayResource> generarReporteCliente(@PathVariable Long id) {
+    Cliente cliente = clienteService.obtenerClientePorId(id);
+    ByteArrayInputStream bis = pdfGeneratorService.generateClientReport(cliente);
+    
+    HttpHeaders headers = new HttpHeaders();
+    headers.add("Content-Disposition", "inline; filename=reporte-cliente-" + id + ".pdf");
+    
+    return ResponseEntity
+            .ok()
+            .headers(headers)
+            .contentType(MediaType.APPLICATION_PDF)
+            .body(new ByteArrayResource(bis.readAllBytes()));
+}
+```
+
+### Personalización
+
+Puedes personalizar los siguientes aspectos del reporte:
+
+- **Información de la empresa**: Modifica las constantes en `PDFGeneratorService`
+- **Estilos**: Ajusta colores y fuentes en los métodos correspondientes
+- **Contenido**: Personaliza las secciones que se incluyen en el reporte
+
+### Dependencias
+
+- iText PDF 5.5.13.3 para la generación de documentos PDF
+
+## API Endpoints Principales
 
 #### Clientes
 - `POST /api/clientes` - Crear cliente

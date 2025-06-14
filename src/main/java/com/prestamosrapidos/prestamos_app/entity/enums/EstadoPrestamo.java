@@ -17,7 +17,8 @@ public enum EstadoPrestamo {
     PENDIENTE("Pendiente"),
     RECHAZADO("Rechazado"),
     PAGADO("Pagado"),
-    VENCIDO("Vencido");
+    VENCIDO("Vencido"),
+    EN_MORA("En mora");
 
     /** Descripción textual del estado */
     private final String descripcion;

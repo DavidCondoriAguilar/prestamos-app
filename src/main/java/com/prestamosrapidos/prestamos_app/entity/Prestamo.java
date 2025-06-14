@@ -7,7 +7,9 @@ import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import lombok.*;
+import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -18,11 +20,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(
-        name = "prestamos",
+@Table(name = "prestamos",
         indexes = {
-                @Index(name = "idx_cliente_id", columnList = "cliente_id"),
-                @Index(name = "idx_estado", columnList = "estado")
+                @Index(name = "idx_prestamo_cliente_id", columnList = "cliente_id"),
+                @Index(name = "idx_prestamo_estado", columnList = "estado")
         }
 )
 @Getter
@@ -34,8 +35,7 @@ import java.util.List;
 public class Prestamo {
 
     @Id
-    @SequenceGenerator(name = "prestamo_seq", sequenceName = "prestamo_sequence", allocationSize = 1)
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "prestamo_seq")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(name = "deuda_restante", nullable = false)
@@ -75,7 +75,7 @@ public class Prestamo {
     private EstadoPrestamo estado;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cliente_id", nullable = false)
+    @JoinColumn(name = "cliente_id", referencedColumnName = "id", nullable = false, foreignKey = @ForeignKey(name = "fk_prestamo_cliente"))
     @NotNull
     private Cliente cliente;
 
@@ -96,14 +96,32 @@ public class Prestamo {
 
     @Column
     private LocalDate fechaUltimaMora;
+    
+    @Column(name = "dias_mora", nullable = false)
+    private int diasMora = 0;
+    
+    @Column(name = "mora_acumulada", nullable = false, precision = 19, scale = 2)
+    @Builder.Default
+    private BigDecimal moraAcumulada = BigDecimal.ZERO;
+    
+    @Column(name = "fecha_ultimo_calculo_mora")
+    private LocalDate fechaUltimoCalculoMora;
 
     @CreatedDate
-    @Column(name = "fecha_creacion_auditoria", updatable = false)
+    @Column(name = "fecha_creacion_auditoria", nullable = false, updatable = false)
     private LocalDateTime fechaCreacionAuditoria;
 
     @LastModifiedDate
-    @Column(name = "fecha_modificacion_auditoria")
+    @Column(name = "fecha_modificacion_auditoria", nullable = false)
     private LocalDateTime fechaModificacionAuditoria;
+    
+    @CreatedBy
+    @Column(name = "creado_por", updatable = false, nullable = false)
+    private String creadoPor;
+    
+    @LastModifiedBy
+    @Column(name = "modificado_por", nullable = false)
+    private String modificadoPor;
 
    /* @LastModifiedDate
     @Column(name = "fecha_actualizacion", nullable = false)

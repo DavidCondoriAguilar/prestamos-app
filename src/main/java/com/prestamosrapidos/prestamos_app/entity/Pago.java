@@ -6,11 +6,11 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Entity
+@Table(name = "pagos")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "pago")
 public class Pago {
 
     @Id
@@ -23,8 +23,11 @@ public class Pago {
     @Column(name = "fecha_pago", nullable = true)
     private LocalDate fecha;
 
-    @ManyToOne
-    @JoinColumn(name = "prestamo_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "prestamo_id", referencedColumnName = "id", nullable = false,
+               foreignKey = @ForeignKey(name = "fk_pago_prestamo"))
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Prestamo prestamo;
 
     // Método para establecer la fecha automáticamente

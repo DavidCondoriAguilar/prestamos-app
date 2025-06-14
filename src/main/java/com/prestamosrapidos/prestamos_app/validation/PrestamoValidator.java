@@ -31,12 +31,14 @@ public class PrestamoValidator {
     }
 
     private static void validarDeudaRestante(PrestamoModel prestamoModel) {
-        double deudaRestante = prestamoModel.getDeudaRestante();
-        if (deudaRestante < 0) {
+        BigDecimal deudaRestante = prestamoModel.getDeudaRestante() != null ? 
+            prestamoModel.getDeudaRestante() : BigDecimal.ZERO;
+            
+        if (deudaRestante.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("La deuda restante no puede ser negativa.");
         }
         if ("PAGADO".equals(prestamoModel.getEstado()) && 
-            deudaRestante != 0) {
+            deudaRestante.compareTo(BigDecimal.ZERO) != 0) {
             throw new IllegalArgumentException("Un préstamo PAGADO debe tener deuda restante = 0");
         }
     }
@@ -54,8 +56,11 @@ public class PrestamoValidator {
 
             BigDecimal montoConInteres = prestamoModel.getMonto().add(prestamoModel.getInteres());
             
-            // Convertimos el double a BigDecimal para la comparación
-            BigDecimal deudaRestante = BigDecimal.valueOf(prestamoModel.getDeudaRestante());
+            // Obtenemos la deuda restante del modelo (puede ser null)
+            BigDecimal deudaRestante = prestamoModel.getDeudaRestante() != null ? 
+                prestamoModel.getDeudaRestante() : BigDecimal.ZERO;
+                
+            // Calculamos la deuda esperada
             BigDecimal deudaCalculada = montoConInteres.subtract(totalPagos);
             
             // Comparamos usando BigDecimal
