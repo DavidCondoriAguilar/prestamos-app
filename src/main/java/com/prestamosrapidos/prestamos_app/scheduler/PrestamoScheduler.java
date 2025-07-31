@@ -87,7 +87,7 @@ public class PrestamoScheduler {
      * @implNote Esta tarea está envuelta en una transacción para garantizar la integridad de los datos.
      * En caso de error durante el procesamiento, se realizará rollback de los cambios.
      */
-    @Scheduled(cron = "0 * * * * ?") // Ejecutar al inicio de cada minuto (cada 60 segundos)
+    @Scheduled(cron = "0 0 */7 * * ?") // Ejecutar al inicio de cada minuto (cada 60 segundos)
     @Transactional
     public void calcularInteresMoratorioDiario() {
         log.info("\n=== INICIO DE CÁLCULO DE MORA - {}", LocalDateTime.now());

@@ -101,7 +101,6 @@ public class ClienteServiceImpl implements ClienteService {
         if (clienteModel.getCuenta() != null) {
             Cuenta cuenta = convertirACuenta(clienteModel.getCuenta(), clienteExistente);
 
-            // Verifica si la lista de cuentas del cliente no contiene la cuenta específica
             if (!clienteExistente.getCuentas().contains(cuenta)) {
                 clienteExistente.addCuenta(cuenta);
             }

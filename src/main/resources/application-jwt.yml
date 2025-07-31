@@ -1,0 +1,7 @@
+# ============================================
+# JWT Configuration
+# ============================================
+app:
+  jwt:
+    secret: your-secret-key-here-change-this-in-production
+    expiration: 86400000

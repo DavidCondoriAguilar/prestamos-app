@@ -109,11 +109,6 @@ public class Prestamo {
         LocalDate fechaCreacionLocalDate = fechaCreacion.toLocalDate();
         LocalDate hoy = LocalDate.now();
         
-        // Validar que la fecha de vencimiento no sea anterior a la de creación
-        if (fechaVencimiento.isBefore(fechaCreacionLocalDate)) {
-            throw new IllegalStateException("La fecha de vencimiento (" + fechaVencimiento + ") no puede ser anterior a la fecha de creación (" + fechaCreacionLocalDate + ")");
-        }
-        
         // Si la fecha de vencimiento es hoy o en el futuro, no hay mora
         if (!hoy.isAfter(fechaVencimiento)) {
             this.diasMora = 0;
