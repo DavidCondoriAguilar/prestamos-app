@@ -23,6 +23,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.http.HttpMethod;
 
 import java.util.Arrays;
 import java.util.List;
@@ -59,6 +60,8 @@ public class SecurityConfig {
             
             // Configuración de autorización de solicitudes
             .authorizeHttpRequests(auth -> auth
+                // Crear cliente sólo ADMIN
+                .requestMatchers(HttpMethod.POST, "/clientes/**").hasRole("ADMIN")
                 // Endpoints públicos
                 .requestMatchers(
                     "/api/auth/**",
@@ -75,6 +78,7 @@ public class SecurityConfig {
                 
                 // Endpoints que requieren autenticación
                 .requestMatchers(
+                    "/clientes/**",
                     "/api/clientes/**",
                     "/api/prestamos/**",
                     "/api/pagos/**",

@@ -41,6 +41,18 @@ public class Prestamo {
     @Column(name = "deuda_restante", nullable = false)
     private BigDecimal deudaRestante = BigDecimal.ZERO;
 
+    @Column(name = "interes_moratorio_acumulado", nullable = false)
+    private BigDecimal interesMoratorioAcumulado = BigDecimal.ZERO;
+    
+    @Column(name = "tasa_interes_moratorio")
+    private BigDecimal tasaInteresMoratorio = new BigDecimal("0.001"); // 0.1% por defecto
+    
+    @Column(name = "fecha_ultimo_calculo_mora")
+    private LocalDate fechaUltimoCalculoMora;
+    
+    @Column(name = "deuda_total", nullable = false)
+    private BigDecimal deudaTotal = BigDecimal.ZERO;
+
     @NotNull
     @Digits(integer = 19, fraction = 2)
     @Column(nullable = false, precision = 19, scale = 2)
@@ -126,9 +138,6 @@ public class Prestamo {
     @Column(name = "mora_acumulada", nullable = false, precision = 19, scale = 2)
     @Builder.Default
     private BigDecimal moraAcumulada = BigDecimal.ZERO;
-    
-    @Column(name = "fecha_ultimo_calculo_mora")
-    private LocalDate fechaUltimoCalculoMora;
 
     @CreatedDate
     @Column(name = "fecha_creacion_auditoria", nullable = false, updatable = false)

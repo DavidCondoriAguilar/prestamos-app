@@ -42,6 +42,28 @@ public class ClienteServiceImpl implements ClienteService {
     @Override
     public ClienteModel crearCliente(ClienteModel clienteModel) {
         clienteValidator.validateClienteModel(clienteModel);
+        
+        // Ensure saldo is properly converted to BigDecimal
+        if (clienteModel.getCuenta() != null && clienteModel.getCuenta().getSaldo() != null) {
+            try {
+                BigDecimal saldo;
+                Object saldoObj = clienteModel.getCuenta().getSaldo();
+                
+                if (saldoObj instanceof String) {
+                    saldo = new BigDecimal((String) saldoObj);
+                } else if (saldoObj instanceof Number) {
+                    saldo = BigDecimal.valueOf(((Number) saldoObj).doubleValue());
+                } else if (saldoObj instanceof BigDecimal) {
+                    saldo = (BigDecimal) saldoObj;
+                } else {
+                    throw new IllegalArgumentException("Formato de saldo no válido");
+                }
+                clienteModel.getCuenta().setSaldo(saldo);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("El saldo debe ser un número válido: " + e.getMessage());
+            }
+        }
+        
         clienteValidator.validateCuentaModel(clienteModel);
 
         Cliente cliente = Cliente.builder()

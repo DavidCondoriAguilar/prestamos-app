@@ -17,7 +17,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
-@RequestMapping("/pagos")
+@RequestMapping("/api/pagos")
 @RequiredArgsConstructor
 @Validated
 public class PagoController {
@@ -31,7 +31,7 @@ public class PagoController {
      * @param size Tamaño de la página (número de elementos por página).
      * @return Página de pagos en formato JSON.
      */
-    @GetMapping
+    @GetMapping({"", "/paginados"})
     public ResponseEntity<Page<PagoModel>> listarTodosLosPagosPaginados(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -43,7 +43,13 @@ public class PagoController {
     }
 
     @PostMapping("/{prestamoId}")
-    public ResponseEntity<PagoModel> registrarPago(@RequestBody @Valid PagoModel pagoModel) {
+    public ResponseEntity<PagoModel> registrarPago(
+            @PathVariable Long prestamoId,
+            @RequestBody @Valid PagoModel pagoModel) {
+
+        // Aseguramos que el modelo reciba el id del préstamo desde la URL
+        pagoModel.setPrestamoId(prestamoId);
+
         PagoModel pagoRegistrado = pagoService.registrarPago(pagoModel);
         return ResponseEntity.status(201).body(pagoRegistrado);
     }
