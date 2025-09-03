@@ -6,9 +6,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import java.util.HashMap;
@@ -27,6 +28,7 @@ public class ClienteController {
     private final ClienteService clienteService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> crearCliente(@Valid @RequestBody ClienteModel clienteModel, BindingResult bindingResult) {
         log.debug("Recibida solicitud de creación de cliente: {}", clienteModel);
         
@@ -54,12 +56,14 @@ public class ClienteController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<List<ClienteModel>> obtenerTodosLosClientes() {
         List<ClienteModel> clientes = clienteService.obtenerTodosLosClientes();
         return new ResponseEntity<>(clientes, HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<ClienteModel> obtenerClientePorId(@PathVariable Long id) {
         try {
             ClienteModel cliente = clienteService.obtenerClientePorId(id);
@@ -70,6 +74,7 @@ public class ClienteController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ClienteModel> actualizarCliente(
             @PathVariable Long id, @RequestBody ClienteModel clienteModel) {
         try {
@@ -81,6 +86,7 @@ public class ClienteController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> eliminarCliente(@PathVariable Long id) {
         try {
             clienteService.eliminarCliente(id);

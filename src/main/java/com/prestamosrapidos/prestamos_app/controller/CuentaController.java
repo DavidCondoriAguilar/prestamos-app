@@ -1,28 +1,32 @@
 package com.prestamosrapidos.prestamos_app.controller;
 
-import com.prestamosrapidos.prestamos_app.entity.ErrorResponse;
+import com.prestamosrapidos.prestamos_app.model.ErrorResponse;
 import com.prestamosrapidos.prestamos_app.model.CuentaModel;
 import com.prestamosrapidos.prestamos_app.service.CuentaService;
 import com.prestamosrapidos.prestamos_app.exception.CuentaNotFoundException;
 import com.prestamosrapidos.prestamos_app.exception.ClienteNotFoundException;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
 import java.time.LocalDateTime;
 
+@Slf4j
 @RestController
 @RequestMapping("/cuentas")
+@RequiredArgsConstructor
+@CrossOrigin(origins = "http://localhost:5173", 
+             allowedHeaders = "*",
+             allowCredentials = "true")
 public class CuentaController {
 
     private final CuentaService cuentaService;
-
-    public CuentaController(CuentaService cuentaService) {
-        this.cuentaService = cuentaService;
-    }
 
     /**
      * Crear una nueva cuenta
@@ -31,8 +35,9 @@ public class CuentaController {
      * @return la cuenta creada
      */
     @PostMapping
-    public Object crearCuenta(@RequestBody @Valid CuentaModel cuentaModel,
-                                                   UriComponentsBuilder uriComponentsBuilder) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> crearCuenta(@RequestBody @Valid CuentaModel cuentaModel,
+                                      UriComponentsBuilder uriComponentsBuilder) {
         try {
             // Crear la nueva cuenta
             CuentaModel nuevaCuenta = cuentaService.crearCuenta(cuentaModel);
@@ -47,28 +52,26 @@ public class CuentaController {
             return ResponseEntity.created(location).body(nuevaCuenta);
         } catch (CuentaNotFoundException ex) {
             // Manejo de excepción específica de cuenta
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(buildErrorResponse("Cuenta no encontrada: " + ex.getMessage()));
+            return buildErrorResponse("Cuenta no encontrada: " + ex.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (ClienteNotFoundException ex) {
             // Manejo de excepción específica de cliente
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(buildErrorResponse("Cliente no encontrado: " + ex.getMessage()));
+            return buildErrorResponse("Cliente no encontrado: " + ex.getMessage(), HttpStatus.NOT_FOUND);
         } catch (IllegalArgumentException ex) {
             // Manejo de errores de argumentos no válidos
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(buildErrorResponse("Argumento inválido: " + ex.getMessage()));
+            return buildErrorResponse("Argumento inválido: " + ex.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception ex) {
             // Manejo de errores inesperados
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(buildErrorResponse("Error interno: " + ex.getMessage()));
+            return buildErrorResponse("Error interno: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    private ErrorResponse buildErrorResponse(String message) {
-        return ErrorResponse.builder()
+    private ResponseEntity<ErrorResponse> buildErrorResponse(String message, HttpStatus status) {
+        log.error("Error en CuentaController: {}", message);
+        ErrorResponse errorResponse = ErrorResponse.builder()
                 .message(message)
                 .timestamp(LocalDateTime.now())
                 .build();
+        return new ResponseEntity<>(errorResponse, status);
     }
 
     /**
@@ -78,7 +81,8 @@ public class CuentaController {
      * @return la cuenta asociada al clientestatus
      */
     @GetMapping("/cliente/{clienteId}")
-    public ResponseEntity<CuentaModel> obtenerCuentaPorCliente(@PathVariable Long clienteId) {
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    public ResponseEntity<?> obtenerCuentaPorCliente(@PathVariable Long clienteId) {
         try {
             CuentaModel cuenta = cuentaService.obtenerCuentaPorClienteId(clienteId);
             return new ResponseEntity<>(cuenta, HttpStatus.OK);
@@ -94,7 +98,8 @@ public class CuentaController {
      * @return una respuesta indicando el éxito o fracaso
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminarCuenta(@PathVariable Long id) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> eliminarCuenta(@PathVariable Long id) {
         try {
             cuentaService.eliminarCuenta(id);
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);

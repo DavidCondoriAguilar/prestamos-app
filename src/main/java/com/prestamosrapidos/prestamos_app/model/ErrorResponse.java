@@ -1,4 +1,4 @@
-package com.prestamosrapidos.prestamos_app.entity;
+package com.prestamosrapidos.prestamos_app.model;
 import lombok.Builder;
 import lombok.Data;
 

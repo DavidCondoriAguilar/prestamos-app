@@ -366,21 +366,6 @@ public class PrestamoScheduler {
     
     /**
      * Calcula el monto de mora diaria para un monto dado.
-     * 
-     * @param monto Monto base sobre el que se calculará la mora
-     * @return Monto de mora diaria redondeado a 2 decimales
-     * @throws IllegalArgumentException Si el monto es nulo o negativo
-     */
-    private BigDecimal calcularMoraDiaria(BigDecimal monto) {
-        return monto.multiply(porcentajeMoraDiario)
-                   .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-    }
-    
-    /**
-     * Actualiza un préstamo con la información de mora calculada.
-     * 
-     * <p>Este método actualiza los siguientes campos del préstamo:</p>
-     * <ul>
      *   <li>Días de mora</li>
      *   <li>Mora acumulada</li>
      *   <li>Deuda restante</li>
@@ -448,6 +433,11 @@ public class PrestamoScheduler {
             // Guardar cambios
             Prestamo prestamoActualizado = prestamoRepository.save(prestamo);
             
+            if (prestamoActualizado == null) {
+                log.warn("⚠️ El repositorio devolvió null al guardar el préstamo {}", prestamo.getId());
+                prestamoActualizado = prestamo; // Usar el objeto original si el guardado falla
+            }
+            
             log.info("✅ Préstamo actualizado exitosamente");
             log.info("Nuevo estado: {}", prestamoActualizado.getEstado());
             log.info("Total de días de mora: {}", prestamoActualizado.getDiasMora());
@@ -476,6 +466,30 @@ public class PrestamoScheduler {
      * @implNote Esta tarea está diseñada para ejecutarse en un entorno de producción
      * con menor frecuencia que el cálculo de mora, ya que solo actualiza estados.
      */
+    /**
+     * Calcula el monto de mora diaria para un préstamo.
+     * 
+     * @param montoPrestamo Monto del préstamo sobre el que se calcula la mora
+     * @return Monto de mora diaria (siempre positivo o cero)
+     */
+    private BigDecimal calcularMoraDiaria(BigDecimal montoPrestamo) {
+        if (montoPrestamo == null || montoPrestamo.compareTo(BigDecimal.ZERO) <= 0) {
+            return BigDecimal.ZERO;
+        }
+        
+        // Usar el valor absoluto del porcentaje para asegurar que sea positivo
+        BigDecimal porcentaje = porcentajeMoraDiario.abs();
+        
+        // Calcular la mora diaria: (monto * porcentaje) / 100
+        BigDecimal moraDiaria = montoPrestamo.multiply(porcentaje)
+                                           .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+        
+        log.debug("Cálculo de mora diaria - Monto: {}, Porcentaje: {}%, Resultado: {}", 
+                 montoPrestamo, porcentaje, moraDiaria);
+                 
+        return moraDiaria;
+    }
+    
     @Scheduled(cron = "0 0 12 * * ?") // Se ejecuta todos los días al mediodía
     @Transactional
     public void actualizarEstadosPrestamosVencidos() {

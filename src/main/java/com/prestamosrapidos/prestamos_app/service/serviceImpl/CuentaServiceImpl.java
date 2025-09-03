@@ -14,6 +14,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 
+/**
+ * Implementación del servicio para la gestión de cuentas bancarias en el sistema de préstamos.
+ * Proporciona funcionalidades para crear, consultar y eliminar cuentas de clientes.
+ */
 @Service
 @RequiredArgsConstructor
 public class CuentaServiceImpl implements CuentaService {
@@ -21,6 +25,16 @@ public class CuentaServiceImpl implements CuentaService {
     private final CuentaRepository cuentaRepository;
     private final ClienteRepository clienteRepository;
 
+    /**
+     * Crea una nueva cuenta bancaria para un cliente.
+     * Valida que el cliente no tenga ya una cuenta asociada y que el número de cuenta sea único.
+     *
+     * @param cuentaModel DTO con los datos de la cuenta a crear
+     * @return CuentaModel La cuenta creada con su ID generado
+     * @throws IllegalArgumentException Si el saldo es menor a 1.00 o el formato del número de cuenta es inválido
+     * @throws ClienteNotFoundException Si no se encuentra el cliente especificado
+     * @throws CuentaNotFoundException Si el número de cuenta ya está en uso
+     */
     @Transactional
     @Override
     public CuentaModel crearCuenta(CuentaModel cuentaModel) {
@@ -60,6 +74,13 @@ public class CuentaServiceImpl implements CuentaService {
     }
 
 
+    /**
+     * Obtiene la cuenta asociada a un cliente por su ID.
+     *
+     * @param clienteId ID del cliente del cual se desea obtener la cuenta
+     * @return CuentaModel Los datos de la cuenta del cliente
+     * @throws CuentaNotFoundException Si no se encuentra una cuenta para el cliente especificado
+     */
     @Override
     @Transactional(readOnly = true)
     public CuentaModel obtenerCuentaPorClienteId(Long clienteId) {
@@ -70,6 +91,12 @@ public class CuentaServiceImpl implements CuentaService {
         return convertirACuentaModel(cuenta);
     }
 
+    /**
+     * Elimina una cuenta del sistema por su ID.
+     *
+     * @param id ID de la cuenta a eliminar
+     * @throws CuentaNotFoundException Si no se encuentra una cuenta con el ID especificado
+     */
     @Override
     @Transactional
     public void eliminarCuenta(Long id) {
@@ -78,11 +105,15 @@ public class CuentaServiceImpl implements CuentaService {
             throw new CuentaNotFoundException("No se encontró la cuenta con ID: " + id);
         }
 
-        // Eliminar la cuenta
         cuentaRepository.deleteById(id);
     }
 
-    // Método para convertir una entidad Cuenta a un modelo CuentaModel
+    /**
+     * Convierte una entidad Cuenta a su correspondiente DTO CuentaModel.
+     *
+     * @param cuenta Entidad Cuenta a convertir
+     * @return CuentaModel DTO con los datos de la cuenta
+     */
     private CuentaModel convertirACuentaModel(Cuenta cuenta) {
         return CuentaModel.builder()
                 .id(cuenta.getId())

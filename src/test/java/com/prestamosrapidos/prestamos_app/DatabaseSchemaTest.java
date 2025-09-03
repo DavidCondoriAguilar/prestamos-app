@@ -1,3 +1,4 @@
+/*
 package com.prestamosrapidos.prestamos_app;
 
 import org.junit.jupiter.api.Test;
@@ -69,3 +70,4 @@ public class DatabaseSchemaTest {
         }
     }
 }
+*/

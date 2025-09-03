@@ -26,6 +26,10 @@ import java.util.stream.Collectors;
 
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Implementación del servicio para la gestión de clientes en el sistema de préstamos.
+ * Proporciona operaciones CRUD para clientes, incluyendo la gestión de sus cuentas y préstamos asociados.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -38,6 +42,15 @@ public class ClienteServiceImpl implements ClienteService {
     private final PrestamoService prestamoService;
     private final ClienteValidator clienteValidator;
 
+    /**
+     * Crea un nuevo cliente en el sistema con sus datos básicos y opcionalmente una cuenta asociada.
+     * Valida los datos del cliente y de la cuenta antes de guardarlos.
+     *
+     * @param clienteModel DTO con los datos del cliente a crear
+     * @return ClienteModel El cliente creado con su ID generado
+     * @throws IllegalArgumentException Si los datos del cliente o cuenta no son válidos
+     * @throws RuntimeException Si ocurre un error al guardar en la base de datos
+     */
     @Transactional
     @Override
     public ClienteModel crearCliente(ClienteModel clienteModel) {
@@ -111,6 +124,14 @@ public class ClienteServiceImpl implements ClienteService {
         return convertirAClienteModel(cliente);
     }
 
+    /**
+     * Actualiza los datos de un cliente existente.
+     *
+     * @param id ID del cliente a actualizar
+     * @param clienteModel DTO con los nuevos datos del cliente
+     * @return ClienteModel El cliente actualizado
+     * @throws ClienteNotFoundException Si no se encuentra el cliente con el ID especificado
+     */
     @Override
     public ClienteModel actualizarCliente(Long id, ClienteModel clienteModel) {
         Cliente clienteExistente = clienteRepository.findById(id)
@@ -133,6 +154,13 @@ public class ClienteServiceImpl implements ClienteService {
         return convertirAClienteModel(clienteActualizado);
     }
 
+    /**
+     * Obtiene un cliente por su ID, incluyendo sus cuentas y préstamos asociados.
+     *
+     * @param id ID del cliente a buscar
+     * @return ClienteModel Los datos del cliente con sus relaciones
+     * @throws ClienteNotFoundException Si no se encuentra el cliente con el ID especificado
+     */
     @Override
     public ClienteModel obtenerClientePorId(Long id) {
         Cliente cliente = clienteRepository.findById(id)
@@ -140,6 +168,12 @@ public class ClienteServiceImpl implements ClienteService {
         return convertirAClienteModel(cliente);
     }
 
+    /**
+     * Obtiene una lista de todos los clientes registrados en el sistema.
+     * Incluye información básica de cada cliente, sus cuentas y préstamos asociados.
+     *
+     * @return List<ClienteModel> Lista de todos los clientes
+     */
     @Override
     public List<ClienteModel> obtenerTodosLosClientes() {
         return clienteRepository.findAll()
@@ -148,6 +182,14 @@ public class ClienteServiceImpl implements ClienteService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Elimina un cliente del sistema por su ID.
+     * No se puede eliminar un cliente que tenga préstamos activos.
+     *
+     * @param id ID del cliente a eliminar
+     * @throws ClienteNotFoundException Si no se encuentra el cliente con el ID especificado
+     * @throws IllegalStateException Si el cliente tiene préstamos activos
+     */
     @Override
     public void eliminarCliente(Long id) {
         Cliente cliente = clienteRepository.findById(id)
@@ -160,6 +202,13 @@ public class ClienteServiceImpl implements ClienteService {
     }
 
 
+    /**
+     * Convierte una entidad Cliente a su correspondiente DTO ClienteModel.
+     * Incluye la conversión de cuentas y préstamos asociados.
+     *
+     * @param cliente Entidad Cliente a convertir
+     * @return ClienteModel DTO con los datos del cliente
+     */
     private ClienteModel convertirAClienteModel(Cliente cliente) {
         return ClienteModel.builder()
                 .id(cliente.getId())
@@ -182,6 +231,12 @@ public class ClienteServiceImpl implements ClienteService {
     }
 
 
+    /**
+     * Convierte una entidad Cuenta a su correspondiente DTO CuentaModel.
+     *
+     * @param cuenta Entidad Cuenta a convertir
+     * @return CuentaModel DTO con los datos de la cuenta, o null si la cuenta es nula
+     */
     private CuentaModel convertirACuentaModel(Cuenta cuenta) {
         if (cuenta == null) return null;
         return CuentaModel.builder()
@@ -192,6 +247,13 @@ public class ClienteServiceImpl implements ClienteService {
                 .build();
     }
 
+    /**
+     * Convierte una entidad Prestamo a su correspondiente DTO PrestamoModel.
+     * Incluye el cálculo de intereses, moras y desglose de pagos.
+     *
+     * @param prestamo Entidad Prestamo a convertir
+     * @return PrestamoModel DTO con los datos del préstamo
+     */
     private PrestamoModel convertirAPrestamoModel(Prestamo prestamo) {
         // Construir el objeto Fechas
         FechasModel fechas = FechasModel.builder()
@@ -252,6 +314,12 @@ public class ClienteServiceImpl implements ClienteService {
                 .build();
     }
 
+    /**
+     * Convierte una entidad Pago a su correspondiente DTO PagoModel.
+     *
+     * @param pago Entidad Pago a convertir
+     * @return PagoModel DTO con los datos del pago
+     */
     private PagoModel convertirPagoAModelo(Pago pago) {
         return PagoModel.builder()
                 .id(pago.getId())
@@ -261,6 +329,15 @@ public class ClienteServiceImpl implements ClienteService {
                 .build();
     }
 
+    /**
+     * Convierte un DTO CuentaModel a su correspondiente entidad Cuenta.
+     * Realiza validaciones sobre los datos de la cuenta.
+     *
+     * @param cuentaModel DTO CuentaModel a convertir
+     * @param cliente Cliente al que pertenece la cuenta
+     * @return Cuenta Entidad de cuenta creada
+     * @throws IllegalArgumentException Si los datos de la cuenta no son válidos
+     */
     private Cuenta convertirACuenta(CuentaModel cuentaModel, Cliente cliente) {
         if (cuentaModel == null) {
             return null;

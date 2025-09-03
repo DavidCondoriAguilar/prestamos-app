@@ -1,4 +1,4 @@
-package com.prestamosrapidos.prestamos_app.service.impl;
+package com.prestamosrapidos.prestamos_app.service.serviceImpl;
 
 import com.prestamosrapidos.prestamos_app.entity.Prestamo;
 import com.prestamosrapidos.prestamos_app.entity.enums.EstadoPrestamo;
@@ -10,7 +10,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
